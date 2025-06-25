@@ -142,14 +142,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rate limiting for all routes
   app.use(apiLimiter);
 
-  // CSRF protection for all non-GET routes
-  app.use((req, res, next) => {
-    if (req.method === 'GET') {
-      next();
-    } else {
-      csrfProtection(req, res, next);
-    }
-  });
+// CSRF protection for API routes only (not static assets)
+app.use((req, res, next) => {
+  if (req.method === 'GET' || req.path.startsWith('/assets/')) {
+    next();
+  } else {
+    csrfProtection(req, res, next);
+  }
+});
 
   // Input sanitization middleware
   app.use((req, res, next) => {
