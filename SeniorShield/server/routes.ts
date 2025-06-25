@@ -7,7 +7,6 @@ import { verifyToken } from "./auth";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import csrf from "csurf";
-import cookieParser from "cookie-parser";
 import sanitize from "sanitize-html";
 import { auditLog } from "./audit-logger";
 import { mlService } from "./ml/service";
@@ -143,16 +142,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rate limiting for all routes
   app.use(apiLimiter);
 
-  // Enable cookie parsing before CSRF protection
-  app.use(cookieParser());
-
-  // Apply CSRF protection conditionally (excluding GET/assets routes)
-  app.use((req, res, next) => {
-    if (req.method === 'GET' || req.path.startsWith('/assets/')) {
-      return next();
-    }
+// CSRF protection for API routes only (not static assets)
+app.use((req, res, next) => {
+  if (req.method === 'GET' || req.path.startsWith('/assets/')) {
+    next();
+  } else {
     csrfProtection(req, res, next);
-  });
+  }
+});
 
   // Input sanitization middleware
   app.use((req, res, next) => {
