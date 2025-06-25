@@ -12,7 +12,19 @@ import Footer from "@/components/footer";
 
 export default function Dashboard() {
   const { data: dashboardData, isLoading, error } = useQuery({
-    queryKey: ["/api/dashboard/1"], // Using user ID 1 for demo
+    queryKey: ["/api/dashboard"],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/dashboard", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch dashboard data");
+      }
+      return response.json();
+    },
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
