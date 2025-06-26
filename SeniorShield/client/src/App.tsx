@@ -10,6 +10,7 @@ import NotFound from "@/pages/not-found";
 import Auth from "@/pages/auth";
 import ConnectBank from "@/pages/connect-bank";
 import VerifyMagicLink from "@/pages/verify-magic-link";
+import Settings from "@/pages/settings";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const token = localStorage.getItem("token");
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/manage-connections" component={() => <ProtectedRoute component={ManageConnections} />} />
       <Route path="/connect-bank" component={() => <ProtectedRoute component={ConnectBank} />} />
       <Route path="/transactions" component={() => <ProtectedRoute component={Transactions} />} />
+      <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
       <Route component={NotFound} />
     </Switch>
   );

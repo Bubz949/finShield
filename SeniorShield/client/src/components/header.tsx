@@ -58,13 +58,15 @@ export default function Header({ user }: HeaderProps) {
           <div className="flex items-center space-x-4">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  className="p-3 text-gray-600 hover:text-blue-600 border-2 border-gray-300 rounded-lg"
-                >
-                  <Settings className="h-5 w-5" />
-                </Button>
+                <Link href="/settings">
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    className="p-3 text-gray-600 hover:text-blue-600 border-2 border-gray-300 rounded-lg"
+                  >
+                    <Settings className="h-5 w-5" />
+                  </Button>
+                </Link>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Settings & Preferences</p>
