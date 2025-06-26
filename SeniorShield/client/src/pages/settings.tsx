@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { User, Settings, Bell, Shield, Trash2 } from "lucide-react";
+import Header from "@/components/header";
 
 interface UserProfile {
   id: number;
@@ -213,6 +214,7 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {profile && <Header user={profile} />}
       <div className="container mx-auto py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">

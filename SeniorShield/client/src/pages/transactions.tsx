@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { ArrowLeft, List, Filter, Calendar, AlertTriangle, CheckCircle, Eye, Search } from "lucide-react";
@@ -12,6 +12,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import TransactionReviewDialog from "@/components/transaction-review-dialog";
+import Header from "@/components/header";
 import type { Transaction } from "@shared/schema";
 
 export default function Transactions() {
@@ -24,18 +25,40 @@ export default function Transactions() {
   const [reviewTransaction, setReviewTransaction] = useState<Transaction | null>(null);
   const { toast } = useToast();
 
+  const [user, setUser] = useState(null);
+  
   const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ["/api/transactions/1?limit=100"], // Using user ID 1 for demo
+    queryKey: ["/api/transactions"],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/transactions", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Failed to fetch transactions");
+      return response.json();
+    },
   });
 
-  const { data: accounts = [] } = useQuery({
-    queryKey: ["/api/dashboard/1"], // Get accounts from dashboard data
-    select: (data: any) => data?.accounts || []
+  const { data: dashboardData } = useQuery({
+    queryKey: ["/api/dashboard"],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/dashboard", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Failed to fetch dashboard");
+      return response.json();
+    },
   });
-
-  const { data: familyMembers = [] } = useQuery({
-    queryKey: ["/api/family-members/1"], // Using user ID 1 for demo
-  });
+  
+  const accounts = dashboardData?.accounts || [];
+  const familyMembers = dashboardData?.familyMembers || [];
+  
+  useEffect(() => {
+    if (dashboardData?.user) {
+      setUser(dashboardData.user);
+    }
+  }, [dashboardData]);
 
   const reviewMutation = useMutation({
     mutationFn: ({ transactionId, status }: { transactionId: number; status: string }) =>
@@ -167,14 +190,9 @@ export default function Transactions() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {user && <Header user={user} />}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <Link href="/dashboard">
-            <Button variant="outline" className="mb-4 text-lg">
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              Back to Dashboard
-            </Button>
-          </Link>
           
           <div className="flex items-center justify-between">
             <div>

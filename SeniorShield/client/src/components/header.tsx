@@ -46,7 +46,7 @@ export default function Header({ user }: HeaderProps) {
         <div className="flex justify-between items-center h-20">
           <div className="flex items-center">
             <Shield className="text-blue-600 h-8 w-8 mr-3" />
-            <h1 className="text-2xl md:text-3xl font-bold text-blue-600">SeniorShield</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-blue-600">Nuvanta</h1>
           </div>
           
           <nav className="hidden md:flex items-center space-x-6">

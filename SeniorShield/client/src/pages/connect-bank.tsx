@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, RefreshCw, Trash2, Building2 } from "lucide-react";
+import Header from "@/components/header";
 
 interface Account {
   id: number;
@@ -157,9 +158,32 @@ export default function ConnectBank() {
     }
   };
 
+  // Get user data for header
+  const [user, setUser] = useState(null);
+  
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch("/api/dashboard", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+      }
+    };
+    fetchUser();
+  }, []);
+
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
+      {user && <Header user={user} />}
+      <div className="container mx-auto py-8 px-4">
+        <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Bank Connections
@@ -302,6 +326,7 @@ export default function ConnectBank() {
               <p>• We comply with all banking regulations and security standards</p>
             </CardContent>
           </Card>
+          </div>
         </div>
       </div>
     </div>
