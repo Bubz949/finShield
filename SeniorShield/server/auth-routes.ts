@@ -9,22 +9,9 @@ import { z } from "zod";
 
 const router = Router();
 
-// Debug route
-router.get("/test", (req, res) => {
-  res.json({ message: "Auth routes working" });
-});
+// Remove debug routes for security
 
-// Debug route to check users in database
-router.get("/debug/users", async (req, res) => {
-  try {
-    // This is a debug route - remove in production
-    const users = await storage.getAllUsers(); // We need to implement this
-    res.json({ users: users.map(u => ({ id: u.id, username: u.username, email: u.email, fullName: u.fullName })) });
-  } catch (error) {
-    console.error("Debug users error:", error);
-    res.status(500).json({ message: "Error fetching users", error: error.message });
-  }
-});
+// Debug routes removed for security
 
 // Validation schemas
 const passwordSchema = z.string()
@@ -62,33 +49,26 @@ const setup2FASchema = z.object({
 // Register new user
 router.post("/register", async (req, res) => {
   try {
-    console.log("Register request body:", req.body);
     const { username, email, password, fullName } = req.body;
     
     if (!username || !email || !password || !fullName) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    console.log("Hashing password...");
     // Hash password
     const hashedPassword = await hashPassword(password);
-    console.log("Password hashed successfully");
 
-    console.log("Creating user...");
     // Create user
     const user = await storage.createUser({
       username,
       email,
       password: hashedPassword,
       fullName,
-      emailVerified: true // Skip email verification for now
+      emailVerified: true
     });
-    console.log("User created:", user.id);
 
-    console.log("Generating token...");
     // Generate auth token
     const token = generateToken(user.id);
-    console.log("Token generated");
 
     res.status(201).json({ 
       token,
@@ -100,9 +80,8 @@ router.post("/register", async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Register error:", error);
-    console.error("Error stack:", error.stack);
-    res.status(500).json({ message: "Internal server error", error: error.message });
+    console.error("Register error:", error.message);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
