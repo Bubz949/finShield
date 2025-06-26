@@ -9,6 +9,7 @@ import AlertCenter from "@/components/alert-center";
 import FamilyConnections from "@/components/family-connections";
 import EducationalTips from "@/components/educational-tips";
 import Footer from "@/components/footer";
+import LoadingSpinner from "@/components/loading-spinner";
 
 export default function Dashboard() {
   const { data: dashboardData, isLoading, error } = useQuery({
@@ -31,10 +32,7 @@ export default function Dashboard() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-xl text-gray-600">Loading your financial dashboard...</p>
-        </div>
+        <LoadingSpinner size="lg" text="Loading your financial dashboard..." />
       </div>
     );
   }
@@ -91,7 +89,7 @@ export default function Dashboard() {
 
           {/* Right Column */}
           <div className="space-y-8">
-            <AlertCenter alerts={alerts} />
+            <AlertCenter alerts={alerts} allAlerts={alerts} />
             <FamilyConnections familyMembers={familyMembers} />
             <EducationalTips />
           </div>

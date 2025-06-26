@@ -1,5 +1,9 @@
-import { Bell, AlertTriangle, Info } from "lucide-react";
+import { Bell, AlertTriangle, Info, ExternalLink, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Link } from "wouter";
 
 interface Alert {
   id: number;
@@ -11,9 +15,10 @@ interface Alert {
 
 interface AlertCenterProps {
   alerts: Alert[];
+  allAlerts?: Alert[];
 }
 
-export default function AlertCenter({ alerts }: AlertCenterProps) {
+export default function AlertCenter({ alerts, allAlerts = [] }: AlertCenterProps) {
   const getAlertIcon = (severity: string) => {
     return severity === "high" ? AlertTriangle : Info;
   };
@@ -95,9 +100,65 @@ export default function AlertCenter({ alerts }: AlertCenterProps) {
         )}
       </div>
       
-      <Button className="w-full bg-blue-600 text-white py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors">
-        View All Alerts
-      </Button>
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button className="w-full bg-blue-600 text-white py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors">
+            View All Alerts ({allAlerts.length})
+          </Button>
+        </DialogTrigger>
+        
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl flex items-center gap-2">
+              <Bell className="h-6 w-6 text-orange-600" />
+              All Security Alerts
+            </DialogTitle>
+          </DialogHeader>
+          
+          <ScrollArea className="h-[60vh] pr-4">
+            {allAlerts.length === 0 ? (
+              <div className="text-center py-8">
+                <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                <p className="text-lg text-gray-600">No alerts - your account is secure!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {allAlerts.map((alert) => {
+                  const AlertIcon = getAlertIcon(alert.severity);
+                  const style = getAlertStyle(alert.severity);
+                  
+                  return (
+                    <div key={alert.id} className={`p-4 border-2 rounded-lg ${style.container}`}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start">
+                          <AlertIcon className={`h-6 w-6 mr-3 mt-1 ${style.icon}`} />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className={`font-semibold text-lg ${style.title}`}>{alert.title}</p>
+                              <Badge variant="outline" className="text-xs uppercase">
+                                {alert.severity}
+                              </Badge>
+                            </div>
+                            <p className="text-gray-700 mt-1">{alert.description}</p>
+                            <p className="text-gray-600 mt-2 text-sm">{formatTimeAgo(alert.createdAt)}</p>
+                          </div>
+                        </div>
+                        
+                        <Link href="/transactions">
+                          <Button size="sm" variant="outline" className="flex items-center gap-1">
+                            <ExternalLink className="h-3 w-3" />
+                            View
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
