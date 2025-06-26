@@ -63,6 +63,9 @@ export interface IStorage {
   createBill(bill: InsertBill): Promise<Bill>;
 }
 
+import fs from 'fs';
+import path from 'path';
+
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private accounts: Map<number, Account>;
@@ -72,8 +75,10 @@ export class MemStorage implements IStorage {
   private bills: Map<number, Bill>;
   private authTokens: Map<string, AuthToken>;
   private currentId: number;
+  private dataFile: string;
 
   constructor() {
+    this.dataFile = path.join(process.cwd(), 'data.json');
     this.users = new Map();
     this.accounts = new Map();
     this.transactions = new Map();
@@ -83,8 +88,80 @@ export class MemStorage implements IStorage {
     this.authTokens = new Map();
     this.currentId = 1;
 
-    // Initialize with mock data
-    this.initializeMockData();
+    // Load existing data or initialize with mock data
+    this.loadData();
+  }
+
+  private loadData() {
+    try {
+      if (fs.existsSync(this.dataFile)) {
+        const data = JSON.parse(fs.readFileSync(this.dataFile, 'utf8'));
+        
+        // Restore data from file
+        this.currentId = data.currentId || 1;
+        
+        if (data.users) {
+          data.users.forEach((user: any) => {
+            this.users.set(user.id, { ...user, createdAt: new Date(user.createdAt) });
+          });
+        }
+        
+        if (data.accounts) {
+          data.accounts.forEach((account: any) => {
+            this.accounts.set(account.id, { ...account, createdAt: new Date(account.createdAt) });
+          });
+        }
+        
+        if (data.transactions) {
+          data.transactions.forEach((transaction: any) => {
+            this.transactions.set(transaction.id, { 
+              ...transaction, 
+              createdAt: new Date(transaction.createdAt),
+              transactionDate: new Date(transaction.transactionDate)
+            });
+          });
+        }
+        
+        if (data.alerts) {
+          data.alerts.forEach((alert: any) => {
+            this.alerts.set(alert.id, { ...alert, createdAt: new Date(alert.createdAt) });
+          });
+        }
+        
+        if (data.familyMembers) {
+          data.familyMembers.forEach((member: any) => {
+            this.familyMembers.set(member.id, { ...member, createdAt: new Date(member.createdAt) });
+          });
+        }
+        
+        console.log('Data loaded from file');
+      } else {
+        // Initialize with mock data if no file exists
+        this.initializeMockData();
+        this.saveData();
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+      this.initializeMockData();
+    }
+  }
+
+  private saveData() {
+    try {
+      const data = {
+        currentId: this.currentId,
+        users: Array.from(this.users.values()),
+        accounts: Array.from(this.accounts.values()),
+        transactions: Array.from(this.transactions.values()),
+        alerts: Array.from(this.alerts.values()),
+        familyMembers: Array.from(this.familyMembers.values()),
+        bills: Array.from(this.bills.values())
+      };
+      
+      fs.writeFileSync(this.dataFile, JSON.stringify(data, null, 2));
+    } catch (error) {
+      console.error('Error saving data:', error);
+    }
   }
 
   private initializeMockData() {
@@ -615,4 +692,6 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+import { PostgresStorage } from './db-storage';
+
+export const storage = new PostgresStorage();
