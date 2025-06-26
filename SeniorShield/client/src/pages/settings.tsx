@@ -212,32 +212,33 @@ export default function Settings() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-          <p className="text-gray-600">Manage your account and preferences</p>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto py-8 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
+            <p className="text-gray-600">Manage your account and preferences</p>
+          </div>
 
-        <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Profile
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Security
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Notifications
-            </TabsTrigger>
-            <TabsTrigger value="account" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Account
-            </TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="profile" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+              <TabsTrigger value="profile" className="flex items-center gap-1 text-xs md:text-sm">
+                <User className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Profile</span>
+              </TabsTrigger>
+              <TabsTrigger value="security" className="flex items-center gap-1 text-xs md:text-sm">
+                <Shield className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Security</span>
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="flex items-center gap-1 text-xs md:text-sm">
+                <Bell className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Alerts</span>
+              </TabsTrigger>
+              <TabsTrigger value="account" className="flex items-center gap-1 text-xs md:text-sm">
+                <Settings className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Account</span>
+              </TabsTrigger>
+            </TabsList>
 
           <TabsContent value="profile">
             <Card>
@@ -248,45 +249,49 @@ export default function Settings() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={updateProfile} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="fullName">Full Name</Label>
-                      <Input
-                        id="fullName"
-                        name="fullName"
-                        defaultValue={profile.fullName}
-                        required
-                      />
+                <form onSubmit={updateProfile} className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="fullName">Full Name</Label>
+                        <Input
+                          id="fullName"
+                          name="fullName"
+                          defaultValue={profile.fullName}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          defaultValue={profile.email}
+                          required
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        defaultValue={profile.email}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
-                      <Input
-                        id="username"
-                        value={profile.username}
-                        disabled
-                        className="bg-gray-50"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phoneNumber">Phone Number</Label>
-                      <Input
-                        id="phoneNumber"
-                        name="phoneNumber"
-                        type="tel"
-                        defaultValue={profile.phoneNumber || ""}
-                        placeholder="(555) 123-4567"
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="username">Username</Label>
+                        <Input
+                          id="username"
+                          value={profile.username}
+                          disabled
+                          className="bg-gray-50"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phoneNumber">Phone Number</Label>
+                        <Input
+                          id="phoneNumber"
+                          name="phoneNumber"
+                          type="tel"
+                          defaultValue={profile.phoneNumber || ""}
+                          placeholder="(555) 123-4567"
+                        />
+                      </div>
                     </div>
                   </div>
                   <Button type="submit" disabled={isLoading}>
@@ -306,7 +311,7 @@ export default function Settings() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={changePassword} className="space-y-4">
+                <form onSubmit={changePassword} className="space-y-6">
                   <div className="space-y-2">
                     <Label htmlFor="currentPassword">Current Password</Label>
                     <Input
@@ -437,7 +442,8 @@ export default function Settings() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        </div>
       </div>
     </div>
   );

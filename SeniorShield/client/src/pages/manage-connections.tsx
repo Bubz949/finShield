@@ -34,7 +34,15 @@ export default function ManageConnections() {
   const { toast } = useToast();
 
   const { data: familyMembers = [], isLoading } = useQuery({
-    queryKey: ["/api/family-members/1"], // Using user ID 1 for demo
+    queryKey: ["/api/family-members"],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/family-members", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Failed to fetch family members");
+      return response.json();
+    },
   });
 
   const form = useForm<FamilyMemberForm>({
@@ -50,10 +58,21 @@ export default function ManageConnections() {
   });
 
   const createMemberMutation = useMutation({
-    mutationFn: (data: FamilyMemberForm) =>
-      apiRequest("POST", "/api/family-members", { ...data, userId: 1 }),
+    mutationFn: async (data: FamilyMemberForm) => {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/family-members", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to create family member");
+      return response.json();
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/family-members/1"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/family-members"] });
       setIsDialogOpen(false);
       form.reset();
       toast({
@@ -71,10 +90,21 @@ export default function ManageConnections() {
   });
 
   const updateMemberMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<FamilyMemberForm> }) =>
-      apiRequest("PATCH", `/api/family-members/${id}`, data),
+    mutationFn: async ({ id, data }: { id: number; data: Partial<FamilyMemberForm> }) => {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/family-members/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to update family member");
+      return response.json();
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/family-members/1"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/family-members"] });
       setIsDialogOpen(false);
       setEditingMember(null);
       form.reset();
@@ -93,9 +123,17 @@ export default function ManageConnections() {
   });
 
   const deleteMemberMutation = useMutation({
-    mutationFn: (id: number) => apiRequest("DELETE", `/api/family-members/${id}`),
+    mutationFn: async (id: number) => {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/family-members/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Failed to delete family member");
+      return response.json();
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/family-members/1"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/family-members"] });
       toast({
         title: "Success",
         description: "Family member removed successfully",

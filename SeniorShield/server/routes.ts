@@ -139,8 +139,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   //   xssFilter: true
   // }));
 
-  // Rate limiting for all routes
-  app.use(apiLimiter);
+  // Rate limiting disabled for development
+  // app.use(apiLimiter);
 
 // CSRF protection completely disabled
 // app.use((req, res, next) => {
