@@ -139,43 +139,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   //   xssFilter: true
   // }));
 
+  // Authentication middleware - moved to top
+  app.use((req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      const token = authHeader.split(" ")[1];
+      try {
+        const decoded = verifyToken(token);
+        if (decoded) {
+          req.user = { id: decoded.userId };
+        }
+      } catch (error) {
+        console.error('Token verification failed:', error);
+      }
+    }
+    next();
+  });
+
   // Rate limiting disabled for development
   // app.use(apiLimiter);
 
-// CSRF protection completely disabled
-// app.use((req, res, next) => {
-//   if (req.method === 'GET' || req.path.startsWith('/assets/')) {
-//     next();
-//   } else {
-//     csrfProtection(req, res, next);
-//   }
-// });
+  // CSRF protection completely disabled
+  // app.use((req, res, next) => {
+  //   if (req.method === 'GET' || req.path.startsWith('/assets/')) {
+  //     next();
+  //   } else {
+  //     csrfProtection(req, res, next);
+  //   }
+  // });
 
   // Input sanitization middleware
   app.use((req, res, next) => {
     req.body = sanitizeInput(req.body);
     req.query = sanitizeInput(req.query);
     req.params = sanitizeInput(req.params);
-    next();
-  });
-
-  // Authentication middleware
-  app.use((req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (authHeader) {
-      const token = authHeader.split(" ")[1];
-      const decoded = verifyToken(token);
-      if (decoded) {
-        req.user = { id: decoded.userId };
-        // Audit log for authenticated requests
-        auditLog.log({
-          userId: decoded.userId,
-          action: `${req.method} ${req.path}`,
-          ip: req.ip,
-          userAgent: req.headers['user-agent']
-        });
-      }
-    }
     next();
   });
 
