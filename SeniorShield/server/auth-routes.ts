@@ -14,6 +14,18 @@ router.get("/test", (req, res) => {
   res.json({ message: "Auth routes working" });
 });
 
+// Debug route to check users in database
+router.get("/debug/users", async (req, res) => {
+  try {
+    // This is a debug route - remove in production
+    const users = await storage.getAllUsers(); // We need to implement this
+    res.json({ users: users.map(u => ({ id: u.id, username: u.username, email: u.email, fullName: u.fullName })) });
+  } catch (error) {
+    console.error("Debug users error:", error);
+    res.status(500).json({ message: "Error fetching users", error: error.message });
+  }
+});
+
 // Validation schemas
 const passwordSchema = z.string()
   .min(12, "Password must be at least 12 characters long")
