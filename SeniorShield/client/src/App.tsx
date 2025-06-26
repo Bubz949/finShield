@@ -16,6 +16,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   const token = localStorage.getItem("token");
   
   if (!token) {
+    window.location.href = "/auth";
     return <Auth />;
   }
   
@@ -27,7 +28,13 @@ function Router() {
     <Switch>
       <Route path="/auth" component={Auth} />
       <Route path="/verify-magic-link" component={VerifyMagicLink} />
-      <Route path="/" component={() => <ProtectedRoute component={Dashboard} />} />
+      <Route path="/" component={() => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          return <Auth />;
+        }
+        return <Dashboard />;
+      }} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route path="/manage-connections" component={() => <ProtectedRoute component={ManageConnections} />} />
       <Route path="/connect-bank" component={() => <ProtectedRoute component={ConnectBank} />} />
