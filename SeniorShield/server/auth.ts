@@ -101,8 +101,11 @@ export function verifyToken(token: string): { userId: number } | null {
 }
 
 export async function createMagicLink(email: string): Promise<string> {
+  console.log(`Creating magic link for email: ${email}`);
+  
   const user = await storage.getUserByEmail(email);
   if (!user) {
+    console.log(`User not found for email: ${email}`);
     throw new Error("User not found");
   }
 
@@ -118,13 +121,22 @@ export async function createMagicLink(email: string): Promise<string> {
 
   // Send magic link email
   const magicLink = `${process.env.APP_URL}/auth/verify-magic-link?token=${token}`;
-  await emailTransporter.sendMail({
-    from: "noreply@example.com",
-    to: email,
-    subject: "Your Magic Link",
-    text: `Click here to log in: ${magicLink}`,
-    html: `<p>Click <a href="${magicLink}">here</a> to log in.</p>`
-  });
+  console.log(`Sending magic link to: ${email}`);
+  console.log(`Magic link URL: ${magicLink}`);
+  
+  try {
+    const info = await emailTransporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: email,
+      subject: "Your Magic Link",
+      text: `Click here to log in: ${magicLink}`,
+      html: `<p>Click <a href="${magicLink}">here</a> to log in.</p>`
+    });
+    console.log(`Email sent successfully:`, info.messageId);
+  } catch (error) {
+    console.error(`Failed to send email:`, error);
+    throw error;
+  }
 
   return token;
 }

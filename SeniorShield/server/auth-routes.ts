@@ -140,6 +140,28 @@ router.post("/magic-link", async (req, res) => {
   }
 });
 
+// Test SMTP connection
+router.post("/test-smtp", async (req, res) => {
+  try {
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransporter({
+      host: process.env.SMTP_HOST,
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
+    
+    await transporter.verify();
+    res.json({ message: "SMTP connection successful" });
+  } catch (error) {
+    console.error("SMTP test error:", error);
+    res.status(500).json({ message: "SMTP connection failed", error: error.message });
+  }
+});
+
 // Verify magic link
 router.get("/verify-magic-link", async (req, res) => {
   try {
