@@ -197,7 +197,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {profile && <Header user={profile} />}
       
       <div className="container mx-auto py-8 px-4">
@@ -213,12 +213,12 @@ export default function Settings() {
           ) : (
             <>
               <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-                <p className="text-gray-600">Manage your account and preferences</p>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">Settings</h1>
+                <p className="text-gray-600 text-lg">Manage your account and AI-powered preferences</p>
               </div>
 
           <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-white/50 backdrop-blur-lg shadow-lg border-0">
               <TabsTrigger value="profile" className="flex items-center gap-1 text-xs md:text-sm">
                 <User className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">Profile</span>
@@ -238,7 +238,7 @@ export default function Settings() {
             </TabsList>
 
           <TabsContent value="profile">
-            <Card>
+            <Card className="backdrop-blur-lg bg-white/80 shadow-xl border-0">
               <CardHeader>
                 <CardTitle>Profile Information</CardTitle>
                 <CardDescription>
@@ -300,7 +300,7 @@ export default function Settings() {
           </TabsContent>
 
           <TabsContent value="security">
-            <Card>
+            <Card className="backdrop-blur-lg bg-white/80 shadow-xl border-0">
               <CardHeader>
                 <CardTitle>Change Password</CardTitle>
                 <CardDescription>
@@ -345,7 +345,7 @@ export default function Settings() {
           </TabsContent>
 
           <TabsContent value="notifications">
-            <Card>
+            <Card className="backdrop-blur-lg bg-white/80 shadow-xl border-0">
               <CardHeader>
                 <CardTitle>Notification Preferences</CardTitle>
                 <CardDescription>
@@ -409,7 +409,7 @@ export default function Settings() {
           </TabsContent>
 
           <TabsContent value="account">
-            <Card>
+            <Card className="backdrop-blur-lg bg-white/80 shadow-xl border-0">
               <CardHeader>
                 <CardTitle>Account Management</CardTitle>
                 <CardDescription>

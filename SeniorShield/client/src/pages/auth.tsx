@@ -151,18 +151,26 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+          <div className="flex justify-center mb-4">
+            <div className="relative">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
+                <span className="text-white font-bold text-2xl">L</span>
+              </div>
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-green-400 to-blue-500 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+          <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Lucentra
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Advanced financial protection for seniors
+          <p className="mt-2 text-gray-600 font-medium">
+            AI-Powered Financial Security Platform
           </p>
         </div>
         
-        <Card>
+        <Card className="backdrop-blur-lg bg-white/80 shadow-2xl border-0">
           <CardHeader>
             <CardTitle>Welcome</CardTitle>
             <CardDescription>
