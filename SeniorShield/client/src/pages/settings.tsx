@@ -196,9 +196,11 @@ export default function Settings() {
     }
   };
 
-  if (!profile) {
-    return (
-      <div className="min-h-screen bg-gray-50">
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {profile && <Header user={profile} />}
+      
+      {!profile ? (
         <div className="container mx-auto py-8 px-4">
           <div className="max-w-4xl mx-auto">
             <div className="animate-pulse">
@@ -210,13 +212,7 @@ export default function Settings() {
             </div>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {profile && <Header user={profile} />}
+      ) : (
       <div className="container mx-auto py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
@@ -449,6 +445,7 @@ export default function Settings() {
           </Tabs>
         </div>
       </div>
+      )}
     </div>
   );
 }
