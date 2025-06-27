@@ -211,10 +211,11 @@ export default function Settings() {
               </div>
             </div>
           ) : (
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-            <p className="text-gray-600">Manage your account and preferences</p>
-          </div>
+            <>
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
+                <p className="text-gray-600">Manage your account and preferences</p>
+              </div>
 
           <Tabs defaultValue="profile" className="space-y-6">
             <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
@@ -438,7 +439,8 @@ export default function Settings() {
               </CardContent>
             </Card>
           </TabsContent>
-          </Tabs>
+              </Tabs>
+            </>
           )}
         </div>
       </div>
