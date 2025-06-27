@@ -135,8 +135,9 @@ router.post("/magic-link", async (req, res) => {
     await createMagicLink(email);
     res.json({ message: "If an account exists, a magic link has been sent" });
   } catch (error) {
-    console.error("Magic link error:", error);
-    res.json({ message: "If an account exists, a magic link has been sent" });
+    console.error("Magic link error - FULL ERROR:", error);
+    console.error("Error stack:", error.stack);
+    res.status(500).json({ message: "Failed to send magic link", error: error.message });
   }
 });
 
