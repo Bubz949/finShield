@@ -125,6 +125,7 @@ export async function createMagicLink(email: string): Promise<string> {
   console.log(`Magic link URL: ${magicLink}`);
   
   try {
+    console.log(`SMTP Config check - User: ${process.env.SMTP_USER}, Pass: ${process.env.SMTP_PASS ? 'SET' : 'NOT SET'}`);
     const info = await emailTransporter.sendMail({
       from: process.env.SMTP_USER,
       to: email,
@@ -133,8 +134,10 @@ export async function createMagicLink(email: string): Promise<string> {
       html: `<p>Click <a href="${magicLink}">here</a> to log in.</p>`
     });
     console.log(`Email sent successfully:`, info.messageId);
+    console.log(`Full email info:`, info);
   } catch (error) {
-    console.error(`Failed to send email:`, error);
+    console.error(`Failed to send email - Full error:`, error);
+    console.error(`Error message:`, error.message);
     throw error;
   }
 
