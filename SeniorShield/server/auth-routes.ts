@@ -143,6 +143,7 @@ router.post("/magic-link", async (req, res) => {
 // Test SMTP connection
 router.post("/test-smtp", async (req, res) => {
   try {
+    console.log(`Testing SMTP - User: ${process.env.SMTP_USER}, Pass: ${process.env.SMTP_PASS ? '[SET]' : '[NOT SET]'}`);
     const nodemailer = require('nodemailer');
     const transporter = nodemailer.createTransporter({
       host: process.env.SMTP_HOST,
@@ -157,7 +158,7 @@ router.post("/test-smtp", async (req, res) => {
     await transporter.verify();
     res.json({ message: "SMTP connection successful" });
   } catch (error) {
-    console.error("SMTP test error:", error);
+    console.error("SMTP test error:", error.message);
     res.status(500).json({ message: "SMTP connection failed", error: error.message });
   }
 });
