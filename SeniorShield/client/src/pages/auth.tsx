@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,28 @@ import { useToast } from "@/hooks/use-toast";
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const error = urlParams.get('error');
+    
+    if (token) {
+      localStorage.setItem('token', token);
+      window.location.href = '/dashboard';
+    } else if (error) {
+      const errorMessages = {
+        invalid_token: 'Invalid magic link token',
+        expired_link: 'Magic link has expired',
+        server_error: 'Server error occurred'
+      };
+      toast({
+        title: 'Authentication Error',
+        description: errorMessages[error as keyof typeof errorMessages] || 'Unknown error',
+        variant: 'destructive'
+      });
+    }
+  }, [toast]);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -133,7 +155,7 @@ export default function Auth() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Nuvanta
+            Lucentra
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             Advanced financial protection for seniors
