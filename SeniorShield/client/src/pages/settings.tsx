@@ -29,10 +29,6 @@ export default function Settings() {
   });
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -48,6 +44,10 @@ export default function Settings() {
       console.error("Failed to fetch profile:", error);
     }
   };
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
 
   const updateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -76,7 +76,7 @@ export default function Settings() {
           title: "Profile updated",
           description: "Your profile has been successfully updated.",
         });
-        fetchProfile();
+        await fetchProfile();
       } else {
         throw new Error("Failed to update profile");
       }
