@@ -148,21 +148,23 @@ router.get("/verify-magic-link", async (req, res) => {
     const { token } = req.query;
     
     if (!token || typeof token !== 'string') {
-      return res.redirect(`${process.env.APP_URL}/?error=invalid_token`);
+      return res.redirect(`http://3.83.45.62:5000/?error=invalid_token`);
     }
 
     const user = await verifyMagicLink(token);
     if (!user) {
-      return res.redirect(`${process.env.APP_URL}/?error=expired_link`);
+      return res.redirect(`http://3.83.45.62:5000/?error=expired_link`);
     }
 
     const authToken = generateToken(user.id);
     
-    // Redirect to frontend with token
-    res.redirect(`${process.env.APP_URL}/?token=${authToken}`);
+    // Redirect to frontend with token  
+    const redirectUrl = `http://3.83.45.62:5000/?token=${authToken}`;
+    console.log(`Redirecting to: ${redirectUrl}`);
+    res.redirect(redirectUrl);
   } catch (error) {
     console.error("Magic link verification error:", error);
-    res.redirect(`${process.env.APP_URL}/?error=server_error`);
+    res.redirect(`http://3.83.45.62:5000/?error=server_error`);
   }
 });
 
