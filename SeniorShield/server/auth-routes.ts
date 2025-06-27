@@ -3,7 +3,9 @@ import { storage } from "./storage";
 import { 
   hashPassword, 
   verifyPassword, 
-  generateToken
+  generateToken,
+  createMagicLink,
+  verifyMagicLink
 } from "./auth";
 import { z } from "zod";
 
@@ -130,10 +132,41 @@ router.post("/magic-link", async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    // For now, just return success (magic link functionality can be implemented later)
+    await createMagicLink(email);
     res.json({ message: "If an account exists, a magic link has been sent" });
   } catch (error) {
     console.error("Magic link error:", error);
+    res.json({ message: "If an account exists, a magic link has been sent" });
+  }
+});
+
+// Verify magic link
+router.get("/verify-magic-link", async (req, res) => {
+  try {
+    const { token } = req.query;
+    
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ message: "Invalid token" });
+    }
+
+    const user = await verifyMagicLink(token);
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired magic link" });
+    }
+
+    const authToken = generateToken(user.id);
+    
+    res.json({ 
+      token: authToken,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName
+      }
+    });
+  } catch (error) {
+    console.error("Magic link verification error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });

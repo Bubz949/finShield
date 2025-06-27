@@ -27,7 +27,7 @@ const LOGIN_LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
 const emailTransporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: 587,
-  secure: true, // Use TLS
+  secure: false, // Use STARTTLS
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS
