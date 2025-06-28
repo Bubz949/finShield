@@ -729,6 +729,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Demo route - generates 200 random transactions for showcasing AI/ML
+  app.get("/api/demo", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Generate 200 random transactions with varying risk levels
+      const demoTransactions = [];
+      const merchants = [
+        "Amazon", "Walmart", "Target", "Starbucks", "McDonald's", "Shell", "CVS Pharmacy", 
+        "Home Depot", "Best Buy", "Kroger", "Costco", "Apple Store", "Netflix", "Spotify",
+        "Unknown Merchant", "Cash Advance", "Wire Transfer", "ATM Withdrawal", "Online Casino",
+        "Crypto Exchange", "Foreign Transaction", "Late Night Purchase"
+      ];
+      
+      const categories = [
+        "Groceries", "Gas", "Dining", "Shopping", "Entertainment", "Healthcare", "Utilities",
+        "Travel", "ATM", "Transfer", "Investment", "Gambling", "Cryptocurrency", "Unknown"
+      ];
+      
+      for (let i = 0; i < 200; i++) {
+        const isHighRisk = Math.random() < 0.15; // 15% high risk
+        const isMediumRisk = Math.random() < 0.25; // 25% medium risk
+        const isLowRisk = !isHighRisk && !isMediumRisk; // 60% low risk
+        
+        let merchant, category, amount, suspiciousScore;
+        
+        if (isHighRisk) {
+          merchant = merchants[Math.floor(Math.random() * 8) + 14]; // Suspicious merchants
+          category = categories[Math.floor(Math.random() * 3) + 11]; // Risky categories
+          amount = -(Math.random() * 5000 + 1000); // Large amounts
+          suspiciousScore = Math.floor(Math.random() * 20) + 80; // 80-100
+        } else if (isMediumRisk) {
+          merchant = merchants[Math.floor(Math.random() * merchants.length)];
+          category = categories[Math.floor(Math.random() * categories.length)];
+          amount = -(Math.random() * 1000 + 200); // Medium amounts
+          suspiciousScore = Math.floor(Math.random() * 30) + 50; // 50-80
+        } else {
+          merchant = merchants[Math.floor(Math.random() * 14)]; // Normal merchants
+          category = categories[Math.floor(Math.random() * 11)]; // Normal categories
+          amount = -(Math.random() * 200 + 10); // Small amounts
+          suspiciousScore = Math.floor(Math.random() * 50); // 0-50
+        }
+        
+        const transaction = {
+          id: i + 1,
+          accountId: 1,
+          amount: amount.toFixed(2),
+          merchant,
+          category,
+          description: `${merchant} transaction`,
+          transactionDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+          isSpending: true,
+          suspiciousScore,
+          isFlagged: suspiciousScore > 70,
+          reviewStatus: suspiciousScore > 90 ? "blocked" : suspiciousScore > 70 ? "pending" : "approved",
+          createdAt: new Date()
+        };
+        
+        // Analyze with ML service for realistic features
+        const analysis = await mlService.analyzeTransaction(transaction, userId);
+        
+        demoTransactions.push({
+          ...transaction,
+          analysis: {
+            anomalyScore: analysis.anomalyScore,
+            behavioralScore: analysis.behavioralScore,
+            features: analysis.features,
+            riskLevel: suspiciousScore > 90 ? "high" : suspiciousScore > 70 ? "medium" : "low"
+          }
+        });
+      }
+      
+      // Sort by suspicious score descending to show high-risk first
+      demoTransactions.sort((a, b) => b.suspiciousScore - a.suspiciousScore);
+      
+      res.json({
+        transactions: demoTransactions,
+        summary: {
+          total: 200,
+          highRisk: demoTransactions.filter(t => t.suspiciousScore > 90).length,
+          mediumRisk: demoTransactions.filter(t => t.suspiciousScore > 70 && t.suspiciousScore <= 90).length,
+          lowRisk: demoTransactions.filter(t => t.suspiciousScore <= 70).length,
+          flagged: demoTransactions.filter(t => t.isFlagged).length
+        }
+      });
+    } catch (error) {
+      console.error("Demo error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Chat endpoint
   app.post("/api/chat", requireAuth, async (req, res) => {
     try {
