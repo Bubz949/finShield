@@ -71,19 +71,12 @@ export default function Settings() {
       });
 
       if (response.ok) {
+        const updatedUser = await response.json();
+        setProfile(updatedUser);
         toast({
           title: "Profile updated",
           description: "Your profile has been successfully updated.",
         });
-        // Refresh profile data
-        const token = localStorage.getItem("token");
-        const refreshResponse = await fetch("/api/dashboard", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (refreshResponse.ok) {
-          const refreshData = await refreshResponse.json();
-          setProfile(refreshData.user);
-        }
       } else {
         throw new Error("Failed to update profile");
       }
