@@ -9,6 +9,7 @@
   "start": "dotenv -e .env -- node dist/index.js",
   "check": "tsc",
   "db:push": "drizzle-kit push",
+  "db:setup": "tsx setup-db.js",
   "security:audit": "npm audit && npm outdated"
 },
   "dependencies": {
