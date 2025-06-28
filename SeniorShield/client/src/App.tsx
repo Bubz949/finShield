@@ -10,6 +10,8 @@ import NotFound from "@/pages/not-found";
 import Auth from "@/pages/auth";
 import ConnectBank from "@/pages/connect-bank";
 import VerifyMagicLink from "@/pages/verify-magic-link";
+import ResetPassword from "@/pages/reset-password";
+import ProfileSetup from "@/pages/profile-setup";
 import Settings from "@/pages/settings";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -28,6 +30,8 @@ function Router() {
     <Switch>
       <Route path="/auth" component={Auth} />
       <Route path="/verify-magic-link" component={VerifyMagicLink} />
+      <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/profile-setup" component={ProfileSetup} />
       <Route path="/" component={() => {
         const token = localStorage.getItem("token");
         if (!token) {

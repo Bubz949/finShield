@@ -10,6 +10,7 @@ import FamilyConnections from "@/components/family-connections";
 import EducationalTips from "@/components/educational-tips";
 import Footer from "@/components/footer";
 import LoadingSpinner from "@/components/loading-spinner";
+import Chatbot from "@/components/chatbot";
 
 export default function Dashboard() {
   const { data: dashboardData, isLoading, error } = useQuery({
@@ -97,6 +98,7 @@ export default function Dashboard() {
       </div>
 
       <Footer />
+      <Chatbot />
     </div>
   );
 }

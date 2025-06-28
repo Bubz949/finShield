@@ -51,7 +51,12 @@ export default function Auth() {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem("token", data.token);
-        window.location.href = "/dashboard";
+        // Check if profile is completed
+        if (data.user.profileCompleted) {
+          window.location.href = "/dashboard";
+        } else {
+          window.location.href = "/profile-setup";
+        }
       } else {
         const error = await response.json();
         toast({
@@ -127,10 +132,9 @@ export default function Auth() {
       });
 
       if (response.ok) {
-        toast({
-          title: "Account created",
-          description: "Please log in with your new account.",
-        });
+        const data = await response.json();
+        localStorage.setItem("token", data.token);
+        window.location.href = "/profile-setup";
       } else {
         const error = await response.json();
         toast({
@@ -157,13 +161,13 @@ export default function Auth() {
           <div className="flex justify-center mb-4">
             <div className="relative">
               <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
-                <span className="text-white font-bold text-2xl">L</span>
+                <span className="text-white font-bold text-2xl">N</span>
               </div>
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-green-400 to-blue-500 rounded-full animate-pulse"></div>
             </div>
           </div>
           <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Lucentra
+            Nuvanta
           </h2>
           <p className="mt-2 text-gray-600 font-medium">
             AI-Powered Financial Security Platform
@@ -210,6 +214,14 @@ export default function Auth() {
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Signing in..." : "Sign In"}
                   </Button>
+                  <div className="text-center">
+                    <a 
+                      href="/reset-password" 
+                      className="text-sm text-blue-600 hover:text-blue-800 underline"
+                    >
+                      Forgot your password?
+                    </a>
+                  </div>
                 </form>
               </TabsContent>
               

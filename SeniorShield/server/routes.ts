@@ -10,6 +10,7 @@ import csrf from "csurf";
 import sanitize from "sanitize-html";
 import { auditLog } from "./audit-logger";
 import { mlService } from "./ml/service";
+import { chatService } from "./chat-service";
 
 // Helper functions for risk trends
 function calculateDailyRiskTrends(transactions: any[]) {
@@ -81,6 +82,49 @@ function getWeekNumber(date: Date) {
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
+function generateQuestions(answer: string, type: 'living' | 'spending', previousAnswers: string[]) {
+  const answerLower = answer.toLowerCase();
+  
+  if (type === 'living') {
+    if (answerLower.includes('alone')) {
+      return [
+        "How do you handle emergencies when you're alone?",
+        "Who do you contact for help with important decisions?",
+        "What safety measures do you have in place at home?",
+        "How comfortable are you using technology for daily tasks?"
+      ];
+    } else if (answerLower.includes('family')) {
+      return [
+        "How involved is your family in your financial decisions?",
+        "Do family members help you with technology or online tasks?",
+        "What concerns do you have about financial privacy?",
+        "How do you prefer to communicate with family about money?"
+      ];
+    }
+  } else if (type === 'spending') {
+    if (answerLower.includes('online') || answerLower.includes('internet')) {
+      return [
+        "What websites do you commonly shop on?",
+        "How do you verify if an online store is legitimate?",
+        "Do you save payment information on websites?",
+        "What would make you suspicious of an online purchase?"
+      ];
+    } else if (answerLower.includes('cash')) {
+      return [
+        "When do you prefer to use cards instead of cash?",
+        "How often do you check your bank statements?",
+        "What would be an unusually large purchase for you?",
+        "Do you have any recurring automatic payments?"
+      ];
+    }
+  }
+  
+  // Default questions
+  return type === 'living' 
+    ? ["How do you manage your daily activities?", "Who helps you with important decisions?", "What are your main safety concerns?", "How comfortable are you with technology?"]
+    : ["What are your largest monthly expenses?", "How do you prefer to pay for things?", "Do you have any recurring subscriptions?", "What would be an unusual purchase for you?"];
 }
 
 // Rate limiting configuration
@@ -198,6 +242,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Yodlee routes
   app.use("/api/yodlee", yodleeRoutes);
+
+
 
   // Protected route middleware
   const requireAuth = (req, res, next) => {
@@ -613,50 +659,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create bank escalation
-  app.post("/api/bank-escalations", requireAuth, async (req, res) => {
+  // Profile setup endpoints
+  app.post("/api/profile/generate-questions", requireAuth, async (req, res) => {
     try {
-      const { userId, transactionId, escalationType, notes, bankContactMethod } = req.body;
+      const { answer, type, previousAnswers } = req.body;
       
-      // Check if user is creating escalation for their own transaction
-      if (userId !== req.user!.id) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
+      // Simple AI-like question generation based on answer
+      const questions = generateQuestions(answer, type, previousAnswers);
+      
+      res.json({ questions });
+    } catch (error) {
+      console.error("Generate questions error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/profile/complete", requireAuth, async (req, res) => {
+    try {
+      const { livingProfile, spendingProfile } = req.body;
+      const userId = req.user!.id;
+      
+      await storage.updateUser(userId, {
+        livingProfile: JSON.stringify(livingProfile),
+        spendingProfile: JSON.stringify(spendingProfile),
+        profileCompleted: true
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Complete profile error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Get bank actions for transaction
+  app.post("/api/bank-actions", requireAuth, async (req, res) => {
+    try {
+      const { transactionId, notes } = req.body;
+      const userId = req.user!.id;
       
       // Verify transaction ownership
       const transaction = await storage.getTransaction(transactionId);
       const account = transaction ? await storage.getAccount(transaction.accountId) : null;
       
-      if (!transaction || !account || account.userId !== req.user!.id) {
+      if (!transaction || !account || account.userId !== userId) {
         return res.status(403).json({ message: "Forbidden" });
       }
       
-      // Create escalation record (simulated)
-      const escalation = {
-        id: Date.now(),
-        userId,
-        transactionId,
-        escalationType,
-        notes,
-        bankContactMethod,
-        status: "submitted",
-        createdAt: new Date(),
-        bankResponse: "Your report has been received and will be reviewed within 24 hours."
-      };
+      // Import bank actions service
+      const { generateBankActionPlan } = require('./bank-actions');
       
-      // Also create an alert for the user
+      // Generate bank-specific action plan
+      const actionPlan = generateBankActionPlan(transaction, account);
+      
+      // Create alert for user with bank actions
       await storage.createAlert({
         userId,
         transactionId,
-        alertType: "bank_escalation",
-        severity: "medium",
-        title: "Bank Contacted",
-        description: `Your report about the suspicious transaction has been sent to your bank's fraud department. Reference ID: ESC-${escalation.id}`
+        alertType: "bank_actions",
+        severity: "high",
+        title: "Bank Actions Available",
+        description: `Contact ${actionPlan.bankInfo.name} at ${actionPlan.bankInfo.fraudHotline} to report suspicious transaction.`
       });
       
-      res.status(201).json(escalation);
+      res.json(actionPlan);
     } catch (error) {
-      console.error("Bank escalation error:", error);
+      console.error("Bank actions error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Chat endpoint
+  app.post("/api/chat", requireAuth, async (req, res) => {
+    try {
+      const { message } = req.body;
+      const userId = req.user!.id;
+      
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ message: "Message is required" });
+      }
+      
+      // Get user context for better responses
+      const [recentTransactions, alerts] = await Promise.all([
+        storage.getRecentTransactions(userId, 10),
+        storage.getAlertsByUserId(userId)
+      ]);
+      
+      const context = {
+        userId,
+        recentTransactions,
+        alerts: alerts.filter(a => !a.isResolved)
+      };
+      
+      const response = await chatService.getChatResponse(message, context);
+      
+      res.json({ response });
+    } catch (error) {
+      console.error("Chat error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

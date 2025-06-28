@@ -23,6 +23,9 @@ export const users = pgTable("users", {
   twoFactorEnabled: boolean("two_factor_enabled").default(false),
   emailVerified: boolean("email_verified").default(false),
   lastLoginAt: timestamp("last_login_at"),
+  profileCompleted: boolean("profile_completed").default(false),
+  livingProfile: text("living_profile"), // JSON string
+  spendingProfile: text("spending_profile"), // JSON string
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -34,6 +37,8 @@ export const accounts = pgTable("accounts", {
   accountNumber: text("account_number").notNull(),
   balance: decimal("balance", { precision: 12, scale: 2 }).notNull(),
   isActive: boolean("is_active").default(true),
+  bankName: text("bank_name"), // "ANZ", "NAB", "CBA", etc.
+  bankPhone: text("bank_phone"), // Bank's fraud hotline
   createdAt: timestamp("created_at").defaultNow(),
   // Yodlee specific fields
   yodleeAccountId: text("yodlee_account_id").unique(),
@@ -99,6 +104,8 @@ export const bills = pgTable("bills", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -130,6 +137,8 @@ export const insertBillSchema = createInsertSchema(bills).omit({
   createdAt: true,
 });
 
+
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -148,6 +157,8 @@ export type FamilyMember = typeof familyMembers.$inferSelect;
 
 export type InsertBill = z.infer<typeof insertBillSchema>;
 export type Bill = typeof bills.$inferSelect;
+
+
 
 export const insertAuthTokenSchema = createInsertSchema(authTokens).omit({
   id: true,

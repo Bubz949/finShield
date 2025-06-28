@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { AlertTriangle, Phone, Mail, Shield, CheckCircle, X } from "lucide-react";
+import { AlertTriangle, Phone, Mail, Shield, CheckCircle, X, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,17 +16,20 @@ interface TransactionReviewDialogProps {
   isOpen: boolean;
   onClose: () => void;
   familyMembers?: FamilyMember[];
+  account?: any;
 }
 
 export default function TransactionReviewDialog({ 
   transaction, 
   isOpen, 
   onClose, 
-  familyMembers = [] 
+  familyMembers = [],
+  account 
 }: TransactionReviewDialogProps) {
   const [selectedAction, setSelectedAction] = useState<string>("");
   const [selectedFamilyMembers, setSelectedFamilyMembers] = useState<number[]>([]);
   const [notes, setNotes] = useState("");
+  const [bankActions, setBankActions] = useState<any>(null);
   const { toast } = useToast();
 
   const reviewMutation = useMutation({
@@ -54,14 +57,13 @@ export default function TransactionReviewDialog({
         // Send notifications to family members (simulated)
         return { success: true, action: "family_notified" };
       } else if (action === "escalate_bank") {
-        // Create bank escalation record
-        return apiRequest("POST", "/api/bank-escalations", {
-          userId: 1,
+        // Get bank actions and contact details
+        const response = await apiRequest("POST", "/api/bank-actions", {
           transactionId: transaction?.id,
-          escalationType: "suspicious_transaction",
-          notes,
-          bankContactMethod: "phone" // Could be extended to allow user choice
+          notes
         });
+        setBankActions(response);
+        return response;
       }
     },
     onSuccess: (data, variables) => {
@@ -85,8 +87,8 @@ export default function TransactionReviewDialog({
         });
       } else if (variables.action === "escalate_bank") {
         toast({
-          title: "Bank Contacted",
-          description: "Your bank has been notified about this suspicious transaction.",
+          title: "Bank Actions Retrieved",
+          description: "Bank contact details and recommended actions have been provided.",
         });
       }
       
@@ -105,6 +107,7 @@ export default function TransactionReviewDialog({
     setSelectedAction("");
     setSelectedFamilyMembers([]);
     setNotes("");
+    setBankActions(null);
     onClose();
   };
 
@@ -246,8 +249,8 @@ export default function TransactionReviewDialog({
                   <div className="flex items-center space-x-3">
                     <Phone className="h-6 w-6 text-red-600" />
                     <div>
-                      <p className="text-lg font-semibold">Contact My Bank</p>
-                      <p className="text-lg text-gray-600">Report this suspicious transaction to my financial institution</p>
+                      <p className="text-lg font-semibold">Get Bank Actions</p>
+                      <p className="text-lg text-gray-600">Get specific contact details and recommended actions for your bank</p>
                     </div>
                   </div>
                 </CardContent>
@@ -280,18 +283,65 @@ export default function TransactionReviewDialog({
             </div>
           )}
 
-          {/* Bank Contact Information */}
-          {selectedAction === "escalate_bank" && (
+          {/* Bank Actions Information */}
+          {bankActions && (
             <Card className="border-blue-200 bg-blue-50">
-              <CardContent className="p-4">
-                <div className="flex items-start space-x-3">
-                  <Shield className="h-6 w-6 text-blue-600 mt-1" />
-                  <div>
-                    <p className="text-lg font-semibold text-blue-700">Bank Contact Information</p>
-                    <p className="text-lg">We'll contact your bank's fraud department at:</p>
-                    <p className="text-lg font-medium">First National Bank: 1-800-FRAUD-HELP</p>
-                    <p className="text-lg text-gray-600">Available 24/7 for fraud reporting</p>
+              <CardHeader>
+                <CardTitle className="text-xl text-blue-700 flex items-center">
+                  <Shield className="h-6 w-6 mr-2" />
+                  {bankActions.bankInfo.name} - Fraud Actions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-red-100 border border-red-300 rounded-lg p-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Phone className="h-5 w-5 text-red-600" />
+                    <p className="text-lg font-semibold text-red-700">Fraud Hotline</p>
                   </div>
+                  <p className="text-xl font-bold text-red-800">{bankActions.bankInfo.fraudHotline}</p>
+                  <p className="text-sm text-red-600">Call immediately to report fraud</p>
+                </div>
+                
+                <div>
+                  <p className="text-lg font-semibold mb-3">Recommended Actions (in order):</p>
+                  <div className="space-y-3">
+                    {bankActions.recommendedActions.map((action: any, index: number) => (
+                      <div key={index} className={`p-3 rounded-lg border ${
+                        action.urgent ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-gray-50'
+                      }`}>
+                        <div className="flex items-start space-x-3">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
+                            action.urgent ? 'bg-red-600 text-white' : 'bg-gray-600 text-white'
+                          }`}>
+                            {action.priority}
+                          </div>
+                          <div>
+                            <p className="font-semibold">{action.action}</p>
+                            <p className="text-sm text-gray-600">{action.description}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {bankActions.bankInfo.website && (
+                  <div className="pt-3 border-t">
+                    <a 
+                      href={bankActions.bankInfo.website} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      <span>Report Online</span>
+                    </a>
+                  </div>
+                )}
+                
+                <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-3">
+                  <p className="text-sm font-semibold text-yellow-800">Transaction Reference:</p>
+                  <p className="text-sm text-yellow-700">TXN-{transaction?.id} | {bankActions.transactionDetails.merchant} | {bankActions.transactionDetails.amount}</p>
                 </div>
               </CardContent>
             </Card>

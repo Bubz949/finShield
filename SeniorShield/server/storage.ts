@@ -61,6 +61,8 @@ export interface IStorage {
   getBillsByUserId(userId: number): Promise<Bill[]>;
   getUpcomingBills(userId: number, days?: number): Promise<Bill[]>;
   createBill(bill: InsertBill): Promise<Bill>;
+
+
 }
 
 import fs from 'fs';
@@ -173,6 +175,9 @@ export class MemStorage implements IStorage {
       fullName: "Mary Johnson",
       email: "mary.johnson@email.com",
       phoneNumber: "(555) 123-4567",
+      profileCompleted: true,
+      livingProfile: JSON.stringify(["I live alone in my own home", "I manage most things myself but my daughter helps with technology", "I have a medical alert system", "I'm comfortable with basic technology but avoid complex online tasks"]),
+      spendingProfile: JSON.stringify(["I mostly shop at local stores and pay with cash or debit card", "My largest expenses are groceries, utilities, and medical costs", "I prefer to pay bills in person or by phone", "Any online purchase over $100 would be unusual for me"]),
       createdAt: new Date(),
     };
     this.users.set(user.id, user);
@@ -181,10 +186,12 @@ export class MemStorage implements IStorage {
     const checkingAccount: Account = {
       id: this.currentId++,
       userId: user.id,
-      accountName: "First National Checking",
+      accountName: "ANZ Everyday Account",
       accountType: "checking",
       accountNumber: "****1234",
       balance: "4823.45",
+      bankName: "ANZ",
+      bankPhone: "1800 019 208",
       isActive: true,
       createdAt: new Date(),
     };
@@ -193,10 +200,12 @@ export class MemStorage implements IStorage {
     const creditAccount: Account = {
       id: this.currentId++,
       userId: user.id,
-      accountName: "Visa Credit Card",
+      accountName: "NAB Visa Credit Card",
       accountType: "credit",
       accountNumber: "****5678",
       balance: "342.18",
+      bankName: "NAB",
+      bankPhone: "1800 033 103",
       isActive: true,
       createdAt: new Date(),
     };
@@ -690,6 +699,8 @@ export class MemStorage implements IStorage {
     this.bills.set(id, bill);
     return bill;
   }
+
+
 }
 
 import { PostgresStorage } from './db-storage';

@@ -34,14 +34,16 @@ class MLService {
       await this.initialize();
     }
 
-    // Get historical transactions for this user
+    // Get user profile and historical transactions
+    const user = await storage.getUser(userId);
     const historicalTransactions = await storage.getTransactionsByUserId(userId);
     
-    // Analyze the transaction
+    // Analyze the transaction with profile data
     const result = await this.fraudDetectionService.analyzeTransaction(
       transaction,
       userId,
-      historicalTransactions
+      historicalTransactions,
+      user
     );
 
     // If transaction is suspicious, create an alert
@@ -57,6 +59,10 @@ class MLService {
     }
 
     return result;
+  }
+
+  async reanalyzeHistoricalTransactions(userId: number, historicalTransactions: Transaction[]) {
+    return this.fraudDetectionService.reanalyzeHistoricalTransactions(userId, historicalTransactions);
   }
 
   // Analyze a batch of transactions (useful for background processing)

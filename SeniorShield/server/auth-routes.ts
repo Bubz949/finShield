@@ -5,7 +5,9 @@ import {
   verifyPassword, 
   generateToken,
   createMagicLink,
-  verifyMagicLink
+  verifyMagicLink,
+  createPasswordResetToken,
+  verifyPasswordResetToken
 } from "./auth";
 import { z } from "zod";
 
@@ -44,6 +46,15 @@ const verifyTokenSchema = z.object({
   token: z.string()
 });
 
+const resetPasswordRequestSchema = z.object({
+  email: z.string().email()
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string(),
+  password: passwordSchema
+});
+
 const setup2FASchema = z.object({
   token: z.string()
 });
@@ -66,7 +77,8 @@ router.post("/register", async (req, res) => {
       email,
       password: hashedPassword,
       fullName,
-      emailVerified: true
+      emailVerified: true,
+      profileCompleted: false
     });
 
     // Generate auth token
@@ -78,7 +90,8 @@ router.post("/register", async (req, res) => {
         id: user.id,
         username: user.username,
         email: user.email,
-        fullName: user.fullName
+        fullName: user.fullName,
+        profileCompleted: user.profileCompleted
       }
     });
   } catch (error) {
@@ -114,7 +127,8 @@ router.post("/login", async (req, res) => {
         id: user.id,
         username: user.username,
         email: user.email,
-        fullName: user.fullName
+        fullName: user.fullName,
+        profileCompleted: user.profileCompleted || false
       }
     });
   } catch (error) {
@@ -169,5 +183,43 @@ router.get("/verify-magic-link", async (req, res) => {
 });
 
 
+
+// Request password reset
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    await createPasswordResetToken(email);
+    res.json({ message: "If an account exists, a password reset link has been sent" });
+  } catch (error) {
+    console.error("Password reset error:", error);
+    res.json({ message: "If an account exists, a password reset link has been sent" });
+  }
+});
+
+// Reset password with token
+router.post("/reset-password/confirm", async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    
+    if (!token || !password) {
+      return res.status(400).json({ message: "Token and password are required" });
+    }
+
+    const user = await verifyPasswordResetToken(token, password);
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired reset token" });
+    }
+
+    res.json({ message: "Password reset successfully" });
+  } catch (error) {
+    console.error("Password reset confirm error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 
 export const authRoutes = router;

@@ -222,7 +222,7 @@ export class FraudDetectionService {
     }
   }
 
-  async analyzeTransaction(transaction: Transaction, userId: number, historicalTransactions: Transaction[]) {
+  async analyzeTransaction(transaction: Transaction, userId: number, historicalTransactions: Transaction[], userProfile?: any) {
     // Get anomaly detection score
     const anomalyResult = await this.anomalyDetector.detectAnomaly(transaction, historicalTransactions);
     
@@ -241,11 +241,15 @@ export class FraudDetectionService {
       classifierScore = await classifier.predict(transaction, historicalTransactions);
     }
 
-    // Combine scores with weighted average
+    // Get profile-based score
+    const profileScore = this.analyzeWithProfile(transaction, userProfile);
+    
+    // Combine scores with weighted average including profile
     const combinedScore = Math.round(
-      (anomalyResult.score * 0.4) + 
-      (behavioralScore * 0.3) + 
-      (classifierScore * 0.3)
+      (anomalyResult.score * 0.3) + 
+      (behavioralScore * 0.25) + 
+      (classifierScore * 0.25) +
+      (profileScore * 0.2)
     );
 
     return {
@@ -254,11 +258,44 @@ export class FraudDetectionService {
       anomalyScore: anomalyResult.score,
       behavioralScore,
       classifierScore,
+      profileScore,
       features: anomalyResult.features
     };
   }
 
-  // Update models with feedback
+  private analyzeWithProfile(transaction: Transaction, userProfile?: any): number {
+    if (!userProfile?.livingProfile || !userProfile?.spendingProfile) {
+      return 0;
+    }
+
+    let riskScore = 0;
+    const amount = Math.abs(parseFloat(transaction.amount.toString()));
+    const merchant = transaction.merchant.toLowerCase();
+    
+    try {
+      const livingAnswers = JSON.parse(userProfile.livingProfile);
+      const spendingAnswers = JSON.parse(userProfile.spendingProfile);
+      
+      // Check for profile-based risk factors
+      const avoidOnline = spendingAnswers.some((answer: string) => 
+        answer.toLowerCase().includes('avoid') && answer.toLowerCase().includes('online'));
+      const prefersCash = spendingAnswers.some((answer: string) => 
+        answer.toLowerCase().includes('cash'));
+      const livesAlone = livingAnswers.some((answer: string) => 
+        answer.toLowerCase().includes('alone'));
+      
+      if (merchant.includes('online') && avoidOnline) riskScore += 30;
+      if (amount > 100 && prefersCash) riskScore += 20;
+      if (livesAlone && new Date(transaction.transactionDate).getHours() < 6) riskScore += 15;
+      
+    } catch (error) {
+      console.error('Error parsing user profile:', error);
+    }
+    
+    return Math.min(riskScore, 100);
+  }
+
+  // Update models with feedback and reanalyze historical transactions
   async updateModels(transaction: Transaction, userId: number, isActuallyFraud: boolean, historicalTransactions: Transaction[]) {
     // Update behavioral profile
     this.behavioralProfiler.updateProfile(userId, [...historicalTransactions, transaction]);
@@ -266,6 +303,86 @@ export class FraudDetectionService {
     // Update Random Forest classifier
     if (this.userClassifiers.has(userId)) {
       await this.userClassifiers.get(userId)!.updateModel(transaction, isActuallyFraud, historicalTransactions);
+    }
+    
+    // Trigger reverse analysis of historical transactions
+    await this.reanalyzeHistoricalTransactions(userId, historicalTransactions);
+  }
+
+  async reanalyzeHistoricalTransactions(userId: number, historicalTransactions: Transaction[]) {
+    const storage = require('../storage').storage;
+    const user = await storage.getUser(userId);
+    
+    for (const oldTransaction of historicalTransactions) {
+      const daysSinceTransaction = (Date.now() - new Date(oldTransaction.transactionDate).getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceTransaction < 30) continue;
+      
+      const priorTransactions = historicalTransactions.filter(t => 
+        new Date(t.transactionDate) < new Date(oldTransaction.transactionDate)
+      );
+      
+      const newAnalysis = await this.analyzeTransaction(oldTransaction, userId, priorTransactions, user);
+      const oldScore = oldTransaction.suspiciousScore || 0;
+      const scoreDifference = Math.abs(newAnalysis.suspiciousScore - oldScore);
+      
+      if ((newAnalysis.suspiciousScore > 70 && oldScore < 50) || scoreDifference > 30) {
+        await storage.updateTransaction(oldTransaction.id, {
+          suspiciousScore: newAnalysis.suspiciousScore,
+          isFlagged: newAnalysis.isAnomaly
+        });
+        
+        await storage.createAlert({
+          userId,
+          transactionId: oldTransaction.id,
+          alertType: 'retrospective_analysis',
+          severity: newAnalysis.suspiciousScore >= 90 ? 'high' : 'medium',
+          title: 'Historical Transaction Flagged',
+          description: `A ${Math.round(daysSinceTransaction)}-day-old transaction at ${oldTransaction.merchant} for ${oldTransaction.amount} has been retrospectively flagged as suspicious (risk score: ${newAnalysis.suspiciousScore}/100).`
+        });
+      }
+    }
+  }
+
+  // Reverse AI analysis - reanalyze old transactions with new knowledge
+  async reanalyzeHistoricalTransactions(userId: number, historicalTransactions: Transaction[]) {
+    const storage = require('../storage').storage;
+    const user = await storage.getUser(userId);
+    
+    for (const oldTransaction of historicalTransactions) {
+      // Skip if transaction is too recent (less than 30 days old)
+      const daysSinceTransaction = (Date.now() - new Date(oldTransaction.transactionDate).getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceTransaction < 30) continue;
+      
+      // Get transactions that occurred before this old transaction for context
+      const priorTransactions = historicalTransactions.filter(t => 
+        new Date(t.transactionDate) < new Date(oldTransaction.transactionDate)
+      );
+      
+      // Reanalyze with current models and knowledge
+      const newAnalysis = await this.analyzeTransaction(oldTransaction, userId, priorTransactions, user);
+      
+      // Check if risk assessment has significantly changed
+      const oldScore = oldTransaction.suspiciousScore || 0;
+      const scoreDifference = Math.abs(newAnalysis.suspiciousScore - oldScore);
+      
+      // If transaction now looks suspicious (and wasn't before) or score increased significantly
+      if ((newAnalysis.suspiciousScore > 70 && oldScore < 50) || scoreDifference > 30) {
+        // Update the transaction
+        await storage.updateTransaction(oldTransaction.id, {
+          suspiciousScore: newAnalysis.suspiciousScore,
+          isFlagged: newAnalysis.isAnomaly
+        });
+        
+        // Create retrospective alert
+        await storage.createAlert({
+          userId,
+          transactionId: oldTransaction.id,
+          alertType: 'retrospective_analysis',
+          severity: newAnalysis.suspiciousScore >= 90 ? 'high' : 'medium',
+          title: 'Historical Transaction Flagged',
+          description: `A ${Math.round(daysSinceTransaction)}-day-old transaction at ${oldTransaction.merchant} for ${oldTransaction.amount} has been retrospectively flagged as suspicious (risk score: ${newAnalysis.suspiciousScore}/100).`
+        });
+      }
     }
   }
 }

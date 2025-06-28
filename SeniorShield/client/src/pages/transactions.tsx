@@ -13,6 +13,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import TransactionReviewDialog from "@/components/transaction-review-dialog";
 import Header from "@/components/header";
+import Chatbot from "@/components/chatbot";
 import type { Transaction } from "@shared/schema";
 
 export default function Transactions() {
@@ -493,6 +494,7 @@ export default function Transactions() {
           familyMembers={familyMembers}
         />
       </div>
+      <Chatbot />
     </div>
   );
 }

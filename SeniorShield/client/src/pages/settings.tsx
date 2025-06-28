@@ -29,23 +29,22 @@ export default function Settings() {
   });
   const { toast } = useToast();
 
-  const fetchProfile = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("/api/dashboard", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setProfile(data.user);
-      }
-    } catch (error) {
-      console.error("Failed to fetch profile:", error);
-    }
-  };
-
   useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch("/api/dashboard", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setProfile(data.user);
+        }
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+      }
+    };
     fetchProfile();
   }, []);
 
@@ -76,7 +75,15 @@ export default function Settings() {
           title: "Profile updated",
           description: "Your profile has been successfully updated.",
         });
-        await fetchProfile();
+        // Refresh profile data
+        const token = localStorage.getItem("token");
+        const refreshResponse = await fetch("/api/dashboard", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (refreshResponse.ok) {
+          const refreshData = await refreshResponse.json();
+          setProfile(refreshData.user);
+        }
       } else {
         throw new Error("Failed to update profile");
       }
@@ -218,10 +225,14 @@ export default function Settings() {
               </div>
 
           <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-white/50 backdrop-blur-lg shadow-lg border-0">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-white/50 backdrop-blur-lg shadow-lg border-0">
               <TabsTrigger value="profile" className="flex items-center gap-1 text-xs md:text-sm">
                 <User className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">Profile</span>
+              </TabsTrigger>
+              <TabsTrigger value="situation" className="flex items-center gap-1 text-xs md:text-sm">
+                <User className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Situation</span>
               </TabsTrigger>
               <TabsTrigger value="security" className="flex items-center gap-1 text-xs md:text-sm">
                 <Shield className="h-3 w-3 md:h-4 md:w-4" />
@@ -295,6 +306,29 @@ export default function Settings() {
                     {isLoading ? "Updating..." : "Update Profile"}
                   </Button>
                 </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="situation">
+            <Card className="backdrop-blur-lg bg-white/80 shadow-xl border-0">
+              <CardHeader>
+                <CardTitle>Update Your Situation</CardTitle>
+                <CardDescription>
+                  Retake the profile questionnaire to improve fraud detection
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-gray-600">
+                  Your living situation and spending habits help us provide better fraud protection. 
+                  Update your profile if your circumstances have changed.
+                </p>
+                <Button 
+                  onClick={() => window.location.href = "/profile-setup"}
+                  className="w-full"
+                >
+                  Update My Situation Profile
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -404,6 +438,7 @@ export default function Settings() {
                     onCheckedChange={(checked) => updateNotifications("weeklyReports", checked)}
                   />
                 </div>
+
               </CardContent>
             </Card>
           </TabsContent>
