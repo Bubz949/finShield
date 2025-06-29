@@ -729,96 +729,196 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Demo route - generates 200 random transactions for showcasing AI/ML
-  app.get("/api/demo", requireAuth, async (req, res) => {
+  // Public demo route for investors - no auth required
+  app.get("/demo", async (req, res) => {
     try {
-      const userId = req.user!.id;
-      
-      // Generate 200 random transactions with varying risk levels
-      const demoTransactions = [];
-      const merchants = [
-        "Amazon", "Walmart", "Target", "Starbucks", "McDonald's", "Shell", "CVS Pharmacy", 
-        "Home Depot", "Best Buy", "Kroger", "Costco", "Apple Store", "Netflix", "Spotify",
-        "Unknown Merchant", "Cash Advance", "Wire Transfer", "ATM Withdrawal", "Online Casino",
-        "Crypto Exchange", "Foreign Transaction", "Late Night Purchase"
-      ];
-      
-      const categories = [
-        "Groceries", "Gas", "Dining", "Shopping", "Entertainment", "Healthcare", "Utilities",
-        "Travel", "ATM", "Transfer", "Investment", "Gambling", "Cryptocurrency", "Unknown"
-      ];
-      
-      for (let i = 0; i < 200; i++) {
-        const isHighRisk = Math.random() < 0.15; // 15% high risk
-        const isMediumRisk = Math.random() < 0.25; // 25% medium risk
-        const isLowRisk = !isHighRisk && !isMediumRisk; // 60% low risk
-        
-        let merchant, category, amount, suspiciousScore;
-        
-        if (isHighRisk) {
-          merchant = merchants[Math.floor(Math.random() * 8) + 14]; // Suspicious merchants
-          category = categories[Math.floor(Math.random() * 3) + 11]; // Risky categories
-          amount = -(Math.random() * 5000 + 1000); // Large amounts
-          suspiciousScore = Math.floor(Math.random() * 20) + 80; // 80-100
-        } else if (isMediumRisk) {
-          merchant = merchants[Math.floor(Math.random() * merchants.length)];
-          category = categories[Math.floor(Math.random() * categories.length)];
-          amount = -(Math.random() * 1000 + 200); // Medium amounts
-          suspiciousScore = Math.floor(Math.random() * 30) + 50; // 50-80
-        } else {
-          merchant = merchants[Math.floor(Math.random() * 14)]; // Normal merchants
-          category = categories[Math.floor(Math.random() * 11)]; // Normal categories
-          amount = -(Math.random() * 200 + 10); // Small amounts
-          suspiciousScore = Math.floor(Math.random() * 50); // 0-50
-        }
-        
-        const transaction = {
-          id: i + 1,
-          accountId: 1,
-          amount: amount.toFixed(2),
-          merchant,
-          category,
-          description: `${merchant} transaction`,
-          transactionDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
-          isSpending: true,
-          suspiciousScore,
-          isFlagged: suspiciousScore > 70,
-          reviewStatus: suspiciousScore > 90 ? "blocked" : suspiciousScore > 70 ? "pending" : "approved",
-          createdAt: new Date()
-        };
-        
-        // Analyze with ML service for realistic features
-        const analysis = await mlService.analyzeTransaction(transaction, userId);
-        
-        demoTransactions.push({
-          ...transaction,
-          analysis: {
-            anomalyScore: analysis.anomalyScore,
-            behavioralScore: analysis.behavioralScore,
-            features: analysis.features,
-            riskLevel: suspiciousScore > 90 ? "high" : suspiciousScore > 70 ? "medium" : "low"
-          }
+      // Create/get demo user
+      let demoUser = await storage.getUserByEmail('demo@finshield.com');
+      if (!demoUser) {
+        demoUser = await storage.createUser({
+          username: 'demo_user',
+          email: 'demo@finshield.com',
+          fullName: 'Demo User',
+          profileCompleted: true
         });
       }
+
+      // Generate fresh demo transactions
+      const demoTransactions = await generateDemoTransactions(demoUser.id);
       
-      // Sort by suspicious score descending to show high-risk first
-      demoTransactions.sort((a, b) => b.suspiciousScore - a.suspiciousScore);
-      
-      res.json({
-        transactions: demoTransactions,
-        summary: {
-          total: 200,
-          highRisk: demoTransactions.filter(t => t.suspiciousScore > 90).length,
-          mediumRisk: demoTransactions.filter(t => t.suspiciousScore > 70 && t.suspiciousScore <= 90).length,
-          lowRisk: demoTransactions.filter(t => t.suspiciousScore <= 70).length,
-          flagged: demoTransactions.filter(t => t.isFlagged).length
-        }
-      });
+      // Render demo page with transactions
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>FinShield AI Demo</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        </head>
+        <body class="bg-gray-50">
+          <div class="container mx-auto p-6">
+            <h1 class="text-3xl font-bold mb-6">FinShield AI - Live Demo</h1>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div class="bg-white p-4 rounded shadow">
+                <h3 class="text-lg font-semibold text-red-600">High Risk</h3>
+                <p class="text-2xl font-bold">${demoTransactions.summary.highRisk}</p>
+              </div>
+              <div class="bg-white p-4 rounded shadow">
+                <h3 class="text-lg font-semibold text-yellow-600">Medium Risk</h3>
+                <p class="text-2xl font-bold">${demoTransactions.summary.mediumRisk}</p>
+              </div>
+              <div class="bg-white p-4 rounded shadow">
+                <h3 class="text-lg font-semibold text-green-600">Low Risk</h3>
+                <p class="text-2xl font-bold">${demoTransactions.summary.lowRisk}</p>
+              </div>
+              <div class="bg-white p-4 rounded shadow">
+                <h3 class="text-lg font-semibold">Total Flagged</h3>
+                <p class="text-2xl font-bold">${demoTransactions.summary.flagged}</p>
+              </div>
+            </div>
+            <div class="bg-white rounded shadow overflow-hidden">
+              <table class="w-full">
+                <thead class="bg-gray-100">
+                  <tr>
+                    <th class="p-3 text-left">Merchant</th>
+                    <th class="p-3 text-left">Amount</th>
+                    <th class="p-3 text-left">Risk Score</th>
+                    <th class="p-3 text-left">Status</th>
+                    <th class="p-3 text-left">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${demoTransactions.transactions.slice(0, 50).map(t => `
+                    <tr class="border-b ${t.suspiciousScore > 90 ? 'bg-red-50' : t.suspiciousScore > 70 ? 'bg-yellow-50' : ''}">
+                      <td class="p-3">${t.merchant}</td>
+                      <td class="p-3">$${Math.abs(t.amount).toFixed(2)}</td>
+                      <td class="p-3">
+                        <span class="px-2 py-1 rounded text-sm ${
+                          t.suspiciousScore > 90 ? 'bg-red-200 text-red-800' :
+                          t.suspiciousScore > 70 ? 'bg-yellow-200 text-yellow-800' :
+                          'bg-green-200 text-green-800'
+                        }">${t.suspiciousScore}/100</span>
+                      </td>
+                      <td class="p-3">
+                        <span class="px-2 py-1 rounded text-sm ${
+                          t.reviewStatus === 'blocked' ? 'bg-red-200 text-red-800' :
+                          t.reviewStatus === 'pending' ? 'bg-yellow-200 text-yellow-800' :
+                          'bg-green-200 text-green-800'
+                        }">${t.reviewStatus}</span>
+                      </td>
+                      <td class="p-3">${new Date(t.transactionDate).toLocaleDateString()}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+            <div class="mt-6 text-center">
+              <button onclick="location.reload()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                Generate New Demo Data
+              </button>
+            </div>
+          </div>
+        </body>
+        </html>
+      `);
     } catch (error) {
       console.error("Demo error:", error);
+      res.status(500).send('Demo unavailable');
+    }
+  });
+
+  // API endpoint for demo data (for programmatic access)
+  app.get("/api/demo", async (req, res) => {
+    try {
+      // Get or create demo user
+      let demoUser = await storage.getUserByEmail('demo@finshield.com');
+      if (!demoUser) {
+        demoUser = await storage.createUser({
+          username: 'demo_user',
+          email: 'demo@finshield.com',
+          fullName: 'Demo User',
+          profileCompleted: true
+        });
+      }
+
+      const demoTransactions = await generateDemoTransactions(demoUser.id);
+      res.json(demoTransactions);
+    } catch (error) {
+      console.error("Demo API error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
+
+  // Helper function to generate demo transactions
+  async function generateDemoTransactions(userId: number) {
+    const merchants = [
+      "Amazon", "Walmart", "Target", "Starbucks", "McDonald's", "Shell", "CVS Pharmacy", 
+      "Home Depot", "Best Buy", "Kroger", "Costco", "Apple Store", "Netflix", "Spotify",
+      "Unknown Merchant", "Cash Advance", "Wire Transfer", "ATM Withdrawal", "Online Casino",
+      "Crypto Exchange", "Foreign Transaction", "Late Night Purchase"
+    ];
+    
+    const categories = [
+      "Groceries", "Gas", "Dining", "Shopping", "Entertainment", "Healthcare", "Utilities",
+      "Travel", "ATM", "Transfer", "Investment", "Gambling", "Cryptocurrency", "Unknown"
+    ];
+    
+    const demoTransactions = [];
+    
+    for (let i = 0; i < 200; i++) {
+      const isHighRisk = Math.random() < 0.15;
+      const isMediumRisk = Math.random() < 0.25;
+      
+      let merchant, category, amount, suspiciousScore;
+      
+      if (isHighRisk) {
+        merchant = merchants[Math.floor(Math.random() * 8) + 14];
+        category = categories[Math.floor(Math.random() * 3) + 11];
+        amount = -(Math.random() * 5000 + 1000);
+        suspiciousScore = Math.floor(Math.random() * 20) + 80;
+      } else if (isMediumRisk) {
+        merchant = merchants[Math.floor(Math.random() * merchants.length)];
+        category = categories[Math.floor(Math.random() * categories.length)];
+        amount = -(Math.random() * 1000 + 200);
+        suspiciousScore = Math.floor(Math.random() * 30) + 50;
+      } else {
+        merchant = merchants[Math.floor(Math.random() * 14)];
+        category = categories[Math.floor(Math.random() * 11)];
+        amount = -(Math.random() * 200 + 10);
+        suspiciousScore = Math.floor(Math.random() * 50);
+      }
+      
+      const transaction = {
+        id: i + 1,
+        accountId: 1,
+        amount: parseFloat(amount.toFixed(2)),
+        merchant,
+        category,
+        description: `${merchant} transaction`,
+        transactionDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+        isSpending: true,
+        suspiciousScore,
+        isFlagged: suspiciousScore > 70,
+        reviewStatus: suspiciousScore > 90 ? "blocked" : suspiciousScore > 70 ? "pending" : "approved",
+        createdAt: new Date()
+      };
+      
+      demoTransactions.push(transaction);
+    }
+    
+    demoTransactions.sort((a, b) => b.suspiciousScore - a.suspiciousScore);
+    
+    return {
+      transactions: demoTransactions,
+      summary: {
+        total: 200,
+        highRisk: demoTransactions.filter(t => t.suspiciousScore > 90).length,
+        mediumRisk: demoTransactions.filter(t => t.suspiciousScore > 70 && t.suspiciousScore <= 90).length,
+        lowRisk: demoTransactions.filter(t => t.suspiciousScore <= 70).length,
+        flagged: demoTransactions.filter(t => t.isFlagged).length
+      }
+    };
+  }
 
   // Chat endpoint
   app.post("/api/chat", requireAuth, async (req, res) => {
