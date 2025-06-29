@@ -729,8 +729,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public demo route for investors - no auth required
-  app.get("/demo", async (req, res) => {
+  // Demo dashboard endpoint - serves dashboard data with demo transactions
+  app.get("/api/demo-dashboard", async (req, res) => {
     try {
       // Create/get demo user
       let demoUser = await storage.getUserByEmail('demo@finshield.com');
@@ -738,96 +738,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
         demoUser = await storage.createUser({
           username: 'demo_user',
           email: 'demo@finshield.com',
-          fullName: 'Demo User',
+          fullName: 'Demo User - Investor Preview',
           profileCompleted: true
         });
       }
 
-      // Generate fresh demo transactions
+      // Generate demo data
       const demoTransactions = await generateDemoTransactions(demoUser.id);
       
-      // Render demo page with transactions
-      res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>FinShield AI Demo</title>
-          <script src="https://cdn.tailwindcss.com"></script>
-          <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        </head>
-        <body class="bg-gray-50">
-          <div class="container mx-auto p-6">
-            <h1 class="text-3xl font-bold mb-6">FinShield AI - Live Demo</h1>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div class="bg-white p-4 rounded shadow">
-                <h3 class="text-lg font-semibold text-red-600">High Risk</h3>
-                <p class="text-2xl font-bold">${demoTransactions.summary.highRisk}</p>
-              </div>
-              <div class="bg-white p-4 rounded shadow">
-                <h3 class="text-lg font-semibold text-yellow-600">Medium Risk</h3>
-                <p class="text-2xl font-bold">${demoTransactions.summary.mediumRisk}</p>
-              </div>
-              <div class="bg-white p-4 rounded shadow">
-                <h3 class="text-lg font-semibold text-green-600">Low Risk</h3>
-                <p class="text-2xl font-bold">${demoTransactions.summary.lowRisk}</p>
-              </div>
-              <div class="bg-white p-4 rounded shadow">
-                <h3 class="text-lg font-semibold">Total Flagged</h3>
-                <p class="text-2xl font-bold">${demoTransactions.summary.flagged}</p>
-              </div>
-            </div>
-            <div class="bg-white rounded shadow overflow-hidden">
-              <table class="w-full">
-                <thead class="bg-gray-100">
-                  <tr>
-                    <th class="p-3 text-left">Merchant</th>
-                    <th class="p-3 text-left">Amount</th>
-                    <th class="p-3 text-left">Risk Score</th>
-                    <th class="p-3 text-left">Status</th>
-                    <th class="p-3 text-left">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${demoTransactions.transactions.slice(0, 50).map(t => `
-                    <tr class="border-b ${t.suspiciousScore > 90 ? 'bg-red-50' : t.suspiciousScore > 70 ? 'bg-yellow-50' : ''}">
-                      <td class="p-3">${t.merchant}</td>
-                      <td class="p-3">$${Math.abs(t.amount).toFixed(2)}</td>
-                      <td class="p-3">
-                        <span class="px-2 py-1 rounded text-sm ${
-                          t.suspiciousScore > 90 ? 'bg-red-200 text-red-800' :
-                          t.suspiciousScore > 70 ? 'bg-yellow-200 text-yellow-800' :
-                          'bg-green-200 text-green-800'
-                        }">${t.suspiciousScore}/100</span>
-                      </td>
-                      <td class="p-3">
-                        <span class="px-2 py-1 rounded text-sm ${
-                          t.reviewStatus === 'blocked' ? 'bg-red-200 text-red-800' :
-                          t.reviewStatus === 'pending' ? 'bg-yellow-200 text-yellow-800' :
-                          'bg-green-200 text-green-800'
-                        }">${t.reviewStatus}</span>
-                      </td>
-                      <td class="p-3">${new Date(t.transactionDate).toLocaleDateString()}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-            <div class="mt-6 text-center">
-              <button onclick="location.reload()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-                Generate New Demo Data
-              </button>
-            </div>
-          </div>
-        </body>
-        </html>
-      `);
+      // Create demo accounts
+      const accounts = [
+        {
+          id: 1,
+          accountName: "Primary Checking",
+          accountType: "checking",
+          balance: "12,450.00",
+          bankName: "Demo Bank",
+          isActive: true
+        },
+        {
+          id: 2,
+          accountName: "Savings Account",
+          accountType: "savings", 
+          balance: "45,230.00",
+          bankName: "Demo Bank",
+          isActive: true
+        }
+      ];
+
+      // Create demo alerts from high-risk transactions
+      const alerts = demoTransactions.transactions
+        .filter(t => t.suspiciousScore > 80)
+        .slice(0, 5)
+        .map((t, i) => ({
+          id: i + 1,
+          alertType: "suspicious_transaction",
+          severity: t.suspiciousScore > 90 ? "high" : "medium",
+          title: "Suspicious Transaction Detected",
+          description: `Transaction of $${Math.abs(t.amount).toFixed(2)} at ${t.merchant} flagged with ${t.suspiciousScore}/100 risk score`,
+          isRead: false,
+          createdAt: t.transactionDate
+        }));
+
+      // Demo family members
+      const familyMembers = [
+        {
+          id: 1,
+          name: "Sarah Johnson",
+          relationship: "Daughter",
+          email: "sarah@example.com",
+          receiveAlerts: true
+        }
+      ];
+
+      // Calculate spending by category
+      const spendingByCategory = demoTransactions.transactions
+        .reduce((acc, t) => {
+          acc[t.category] = (acc[t.category] || 0) + Math.abs(t.amount);
+          return acc;
+        }, {});
+
+      // Dashboard response matching the real dashboard format
+      res.json({
+        user: demoUser,
+        accounts,
+        recentTransactions: demoTransactions.transactions.slice(0, 10),
+        alerts,
+        familyMembers,
+        stats: {
+          protectedAccounts: accounts.length,
+          weeklyAlerts: alerts.length,
+          unreadAlerts: alerts.filter(a => !a.isRead).length
+        },
+        spendingByCategory
+      });
     } catch (error) {
-      console.error("Demo error:", error);
-      res.status(500).send('Demo unavailable');
+      console.error("Demo dashboard error:", error);
+      res.status(500).json({ message: "Demo unavailable" });
     }
   });
 
-  // API endpoint for demo data (for programmatic access)
+  // Legacy demo API endpoint
   app.get("/api/demo", async (req, res) => {
     try {
       // Get or create demo user

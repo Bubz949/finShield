@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
+import DemoDashboard from "@/pages/demo-dashboard";
 import ManageConnections from "@/pages/manage-connections";
 import Transactions from "@/pages/transactions";
 import NotFound from "@/pages/not-found";
@@ -28,6 +29,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 function Router() {
   return (
     <Switch>
+      <Route path="/demo" component={DemoDashboard} />
       <Route path="/auth" component={Auth} />
       <Route path="/verify-magic-link" component={VerifyMagicLink} />
       <Route path="/reset-password" component={ResetPassword} />
