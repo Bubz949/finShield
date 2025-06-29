@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import Header from "@/components/header";
+import DemoHeader from "@/components/demo-header";
 import AlertBanner from "@/components/alert-banner";
 import QuickStats from "@/components/quick-stats";
 import AccountOverview from "@/components/account-overview";
@@ -79,7 +79,7 @@ export default function DemoDashboard() {
         </button>
       </div>
       
-      <Header user={user} />
+      <DemoHeader user={user} />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {highPriorityAlert && <AlertBanner alert={highPriorityAlert} />}
