@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,15 @@ export default function Chatbot() {
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const sendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -95,8 +104,8 @@ export default function Chatbot() {
 
       {/* Chat Window */}
       {isOpen && (
-        <Card className="fixed bottom-24 right-6 w-96 h-96 shadow-xl z-50 flex flex-col">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="fixed bottom-24 right-6 w-96 h-[500px] shadow-xl z-50 flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 flex-shrink-0">
             <CardTitle className="text-lg">FinShield Assistant</CardTitle>
             <Button
               variant="ghost"
@@ -108,9 +117,9 @@ export default function Chatbot() {
             </Button>
           </CardHeader>
           
-          <CardContent className="flex-1 flex flex-col p-4 space-y-4">
-            <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-4">
+          <CardContent className="flex-1 flex flex-col p-4 space-y-4 min-h-0">
+            <ScrollArea className="flex-1 h-full">
+              <div className="space-y-4 pr-4">
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -138,10 +147,11 @@ export default function Chatbot() {
                     </div>
                   </div>
                 )}
+                <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
 
-            <div className="flex space-x-2">
+            <div className="flex space-x-2 flex-shrink-0">
               <Input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}

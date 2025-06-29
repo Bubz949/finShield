@@ -2,13 +2,14 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { eq, desc, and, lte } from 'drizzle-orm';
 import { 
-  users, accounts, transactions, alerts, familyMembers, bills, authTokens,
+  users, accounts, transactions, alerts, familyMembers, bills, situations, authTokens,
   type User, type InsertUser, 
   type Account, type InsertAccount,
   type Transaction, type InsertTransaction,
   type Alert, type InsertAlert,
   type FamilyMember, type InsertFamilyMember,
   type Bill, type InsertBill,
+  type Situation, type InsertSituation,
   type AuthToken, type InsertAuthToken
 } from "@shared/schema";
 import { IStorage } from "./storage";
@@ -47,6 +48,10 @@ export class PostgresStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const result = await db.insert(users).values(insertUser).returning();
+    return result[0];
+  }
+  async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
+    const result = await db.update(users).set(updates).where(eq(users.id, id)).returning();
     return result[0];
   }
 
@@ -226,5 +231,48 @@ export class PostgresStorage implements IStorage {
   async createBill(insertBill: InsertBill): Promise<Bill> {
     const result = await db.insert(bills).values(insertBill).returning();
     return result[0];
+  }
+
+  // Situation operations
+  async getSituationsByUserId(userId: number): Promise<Situation[]> {
+    return await db.select().from(situations).where(eq(situations.userId, userId)).orderBy(desc(situations.createdAt));
+  }
+
+  async getActiveSituationsByUserId(userId: number): Promise<Situation[]> {
+    return await db.select().from(situations)
+      .where(and(eq(situations.userId, userId), eq(situations.isActive, true)))
+      .orderBy(desc(situations.createdAt));
+  }
+
+  async getSituation(id: number): Promise<Situation | undefined> {
+    const result = await db.select().from(situations).where(eq(situations.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createSituation(insertSituation: InsertSituation): Promise<Situation> {
+    const result = await db.insert(situations).values(insertSituation).returning();
+    return result[0];
+  }
+
+  async updateSituation(id: number, updates: Partial<Situation>): Promise<Situation | undefined> {
+    const result = await db.update(situations).set(updates).where(eq(situations.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteSituation(id: number): Promise<boolean> {
+    const result = await db.delete(situations).where(eq(situations.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getSituationsNeedingReminders(): Promise<Situation[]> {
+    const now = new Date();
+    const reminderCutoff = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)); // 7 days ago
+    
+    return await db.select().from(situations)
+      .where(and(
+        eq(situations.isActive, true),
+        // Either never sent a reminder, or last reminder was more than reminderFrequency days ago
+        // This is a simplified version - in production you'd use a more complex query
+      ));
   }
 }

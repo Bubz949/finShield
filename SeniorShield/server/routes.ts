@@ -313,6 +313,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update alert delivery preferences
+  app.put("/api/alert-delivery", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { alertType, method, enabled } = req.body;
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const currentDelivery = user.alertDelivery || {
+        suspicious: { email: true, sms: false },
+        highSpending: { email: true, sms: false },
+        billReminders: { email: true, sms: true },
+        weeklyReports: { email: true, sms: false }
+      };
+
+      if (!currentDelivery[alertType]) {
+        currentDelivery[alertType] = { email: false, sms: false };
+      }
+      currentDelivery[alertType][method] = enabled;
+
+      await storage.updateUser(userId, { alertDelivery: currentDelivery });
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Alert delivery update error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Get all alerts for user
   app.get("/api/alerts", requireAuth, async (req, res) => {
     try {
@@ -729,189 +760,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Demo dashboard endpoint - serves dashboard data with demo transactions
-  app.get("/api/demo-dashboard", async (req, res) => {
-    try {
-      // Create/get demo user
-      let demoUser = await storage.getUserByEmail('demo@finshield.com');
-      if (!demoUser) {
-        demoUser = await storage.createUser({
-          username: 'demo_user',
-          email: 'demo@finshield.com',
-          fullName: 'Demo User - Investor Preview',
-          profileCompleted: true
-        });
-      }
 
-      // Generate demo data
-      const demoTransactions = await generateDemoTransactions(demoUser.id);
-      
-      // Create demo accounts
-      const accounts = [
-        {
-          id: 1,
-          accountName: "Primary Checking",
-          accountType: "checking",
-          balance: "12,450.00",
-          bankName: "Demo Bank",
-          isActive: true
-        },
-        {
-          id: 2,
-          accountName: "Savings Account",
-          accountType: "savings", 
-          balance: "45,230.00",
-          bankName: "Demo Bank",
-          isActive: true
-        }
-      ];
 
-      // Create demo alerts from high-risk transactions
-      const alerts = demoTransactions.transactions
-        .filter(t => t.suspiciousScore > 80)
-        .slice(0, 5)
-        .map((t, i) => ({
-          id: i + 1,
-          alertType: "suspicious_transaction",
-          severity: t.suspiciousScore > 90 ? "high" : "medium",
-          title: "Suspicious Transaction Detected",
-          description: `Transaction of $${Math.abs(t.amount).toFixed(2)} at ${t.merchant} flagged with ${t.suspiciousScore}/100 risk score`,
-          isRead: false,
-          createdAt: t.transactionDate
-        }));
-
-      // Demo family members
-      const familyMembers = [
-        {
-          id: 1,
-          name: "Sarah Johnson",
-          relationship: "Daughter",
-          email: "sarah@example.com",
-          receiveAlerts: true
-        }
-      ];
-
-      // Calculate spending by category
-      const spendingByCategory = demoTransactions.transactions
-        .reduce((acc, t) => {
-          acc[t.category] = (acc[t.category] || 0) + Math.abs(t.amount);
-          return acc;
-        }, {});
-
-      // Dashboard response matching the real dashboard format
-      res.json({
-        user: demoUser,
-        accounts,
-        recentTransactions: demoTransactions.transactions.slice(0, 10),
-        alerts,
-        familyMembers,
-        stats: {
-          protectedAccounts: accounts.length,
-          weeklyAlerts: alerts.length,
-          unreadAlerts: alerts.filter(a => !a.isRead).length
-        },
-        spendingByCategory
-      });
-    } catch (error) {
-      console.error("Demo dashboard error:", error);
-      res.status(500).json({ message: "Demo unavailable" });
-    }
-  });
-
-  // Legacy demo API endpoint
-  app.get("/api/demo", async (req, res) => {
-    try {
-      // Get or create demo user
-      let demoUser = await storage.getUserByEmail('demo@finshield.com');
-      if (!demoUser) {
-        demoUser = await storage.createUser({
-          username: 'demo_user',
-          email: 'demo@finshield.com',
-          fullName: 'Demo User',
-          profileCompleted: true
-        });
-      }
-
-      const demoTransactions = await generateDemoTransactions(demoUser.id);
-      res.json(demoTransactions);
-    } catch (error) {
-      console.error("Demo API error:", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  // Helper function to generate demo transactions
-  async function generateDemoTransactions(userId: number) {
-    const merchants = [
-      "Amazon", "Walmart", "Target", "Starbucks", "McDonald's", "Shell", "CVS Pharmacy", 
-      "Home Depot", "Best Buy", "Kroger", "Costco", "Apple Store", "Netflix", "Spotify",
-      "Unknown Merchant", "Cash Advance", "Wire Transfer", "ATM Withdrawal", "Online Casino",
-      "Crypto Exchange", "Foreign Transaction", "Late Night Purchase"
-    ];
-    
-    const categories = [
-      "Groceries", "Gas", "Dining", "Shopping", "Entertainment", "Healthcare", "Utilities",
-      "Travel", "ATM", "Transfer", "Investment", "Gambling", "Cryptocurrency", "Unknown"
-    ];
-    
-    const demoTransactions = [];
-    
-    for (let i = 0; i < 200; i++) {
-      const isHighRisk = Math.random() < 0.15;
-      const isMediumRisk = Math.random() < 0.25;
-      
-      let merchant, category, amount, suspiciousScore;
-      
-      if (isHighRisk) {
-        merchant = merchants[Math.floor(Math.random() * 8) + 14];
-        category = categories[Math.floor(Math.random() * 3) + 11];
-        amount = -(Math.random() * 5000 + 1000);
-        suspiciousScore = Math.floor(Math.random() * 20) + 80;
-      } else if (isMediumRisk) {
-        merchant = merchants[Math.floor(Math.random() * merchants.length)];
-        category = categories[Math.floor(Math.random() * categories.length)];
-        amount = -(Math.random() * 1000 + 200);
-        suspiciousScore = Math.floor(Math.random() * 30) + 50;
-      } else {
-        merchant = merchants[Math.floor(Math.random() * 14)];
-        category = categories[Math.floor(Math.random() * 11)];
-        amount = -(Math.random() * 200 + 10);
-        suspiciousScore = Math.floor(Math.random() * 50);
-      }
-      
-      const transaction = {
-        id: i + 1,
-        accountId: 1,
-        amount: parseFloat(amount.toFixed(2)),
-        merchant,
-        category,
-        description: `${merchant} transaction`,
-        transactionDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
-        isSpending: true,
-        suspiciousScore,
-        isFlagged: suspiciousScore > 70,
-        reviewStatus: suspiciousScore > 90 ? "blocked" : suspiciousScore > 70 ? "pending" : "approved",
-        createdAt: new Date()
-      };
-      
-      demoTransactions.push(transaction);
-    }
-    
-    demoTransactions.sort((a, b) => b.suspiciousScore - a.suspiciousScore);
-    
-    return {
-      transactions: demoTransactions,
-      summary: {
-        total: 200,
-        highRisk: demoTransactions.filter(t => t.suspiciousScore > 90).length,
-        mediumRisk: demoTransactions.filter(t => t.suspiciousScore > 70 && t.suspiciousScore <= 90).length,
-        lowRisk: demoTransactions.filter(t => t.suspiciousScore <= 70).length,
-        flagged: demoTransactions.filter(t => t.isFlagged).length
-      }
-    };
-  }
-
-  // Chat endpoint
+  // Chat endpoint with situation handling
   app.post("/api/chat", requireAuth, async (req, res) => {
     try {
       const { message } = req.body;
@@ -922,25 +773,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get user context for better responses
-      const [recentTransactions, alerts] = await Promise.all([
+      const [recentTransactions, alerts, user] = await Promise.all([
         storage.getRecentTransactions(userId, 10),
-        storage.getAlertsByUserId(userId)
+        storage.getAlertsByUserId(userId),
+        storage.getUser(userId)
       ]);
       
       const context = {
         userId,
         recentTransactions,
-        alerts: alerts.filter(a => !a.isResolved)
+        alerts: alerts.filter(a => !a.isResolved),
+        userProfile: user
       };
       
-      const response = await chatService.getChatResponse(message, context);
+      const result = await chatService.getChatResponse(message, context);
       
-      res.json({ response });
+      // Handle profile updates
+      if (result.profileUpdate) {
+        await storage.updateUser(userId, {
+          spendingProfile: JSON.stringify(result.profileUpdate.spendingProfile),
+          livingProfile: JSON.stringify(result.profileUpdate.livingProfile)
+        });
+      }
+      
+      res.json({ response: result.response });
     } catch (error) {
       console.error("Chat error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
+
+  // Reset current situation in user profile
+  app.patch("/api/profile/reset-situation", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const currentSpending = user.spendingProfile ? JSON.parse(user.spendingProfile) : {};
+      const currentLiving = user.livingProfile ? JSON.parse(user.livingProfile) : {};
+      
+      // Remove current situation
+      delete currentSpending.currentSituation;
+      delete currentSpending.expectedCategories;
+      delete currentSpending.reducedActivity;
+      delete currentSpending.higherSpending;
+      delete currentSpending.limitedMobility;
+      delete currentLiving.temporaryChange;
+      delete currentLiving.assistanceNeeded;
+      
+      await storage.updateUser(userId, {
+        spendingProfile: JSON.stringify(currentSpending),
+        livingProfile: JSON.stringify(currentLiving)
+      });
+      
+      res.json({ message: "Situation reset successfully" });
+    } catch (error) {
+      console.error("Reset situation error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+
+
+
 
   const httpServer = createServer(app);
   return httpServer;

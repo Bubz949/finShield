@@ -6,8 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { User, Settings, Bell, Shield, Trash2 } from "lucide-react";
+import { User, Settings, Bell, Shield, Trash2, Mail, MessageSquare } from "lucide-react";
 import Header from "@/components/header";
 
 interface UserProfile {
@@ -27,6 +28,12 @@ export default function Settings() {
     billReminders: true,
     weeklyReports: false,
   });
+  const [alertDelivery, setAlertDelivery] = useState({
+    suspicious: { email: true, sms: false },
+    highSpending: { email: true, sms: false },
+    billReminders: { email: true, sms: true },
+    weeklyReports: { email: true, sms: false },
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -40,6 +47,12 @@ export default function Settings() {
         if (response.ok) {
           const data = await response.json();
           setProfile(data.user);
+          
+          // Load alert delivery preferences if they exist
+          if (data.user.alertDelivery) {
+            const parsed = JSON.parse(data.user.alertDelivery);
+            setAlertDelivery(parsed);
+          }
         }
       } catch (error) {
         console.error("Failed to fetch profile:", error);
@@ -164,6 +177,40 @@ export default function Settings() {
       toast({
         title: "Update failed",
         description: "Failed to update notifications.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateAlertDelivery = async (alertType: string, method: string, enabled: boolean) => {
+    try {
+      setAlertDelivery(prev => ({
+        ...prev,
+        [alertType]: { ...prev[alertType as keyof typeof prev], [method]: enabled }
+      }));
+      
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/alert-delivery", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ alertType, method, enabled }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to update alert delivery");
+      }
+      
+      toast({
+        title: "Delivery method updated",
+        description: "Your alert delivery preferences have been saved.",
+      });
+    } catch (error) {
+      toast({
+        title: "Update failed",
+        description: "Failed to update alert delivery method.",
         variant: "destructive",
       });
     }
@@ -380,57 +427,58 @@ export default function Settings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Suspicious Activity Alerts</Label>
-                    <p className="text-sm text-gray-500">
-                      Get notified when suspicious transactions are detected
-                    </p>
+                {[
+                  { key: 'suspicious', label: 'Suspicious Activity Alerts', desc: 'Get notified when suspicious transactions are detected' },
+                  { key: 'highSpending', label: 'High Spending Alerts', desc: 'Get notified when spending exceeds normal patterns' },
+                  { key: 'billReminders', label: 'Bill Reminders', desc: 'Get reminded about upcoming bill payments' },
+                  { key: 'weeklyReports', label: 'Weekly Reports', desc: 'Receive weekly spending and security reports' }
+                ].map((alert, index) => (
+                  <div key={alert.key}>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label>{alert.label}</Label>
+                          <p className="text-sm text-gray-500">{alert.desc}</p>
+                        </div>
+                        <Switch
+                          checked={notifications[alert.key as keyof typeof notifications]}
+                          onCheckedChange={(checked) => updateNotifications(alert.key, checked)}
+                        />
+                      </div>
+                      
+                      {notifications[alert.key as keyof typeof notifications] && (
+                        <div className="ml-4 p-4 bg-gray-50 rounded-lg">
+                          <Label className="text-sm font-medium mb-3 block">Delivery Methods</Label>
+                          <div className="flex gap-6">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`${alert.key}-email`}
+                                checked={alertDelivery[alert.key as keyof typeof alertDelivery]?.email}
+                                onCheckedChange={(checked) => updateAlertDelivery(alert.key, 'email', checked as boolean)}
+                              />
+                              <Label htmlFor={`${alert.key}-email`} className="flex items-center gap-2 text-sm">
+                                <Mail className="h-4 w-4" />
+                                Email
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`${alert.key}-sms`}
+                                checked={alertDelivery[alert.key as keyof typeof alertDelivery]?.sms}
+                                onCheckedChange={(checked) => updateAlertDelivery(alert.key, 'sms', checked as boolean)}
+                              />
+                              <Label htmlFor={`${alert.key}-sms`} className="flex items-center gap-2 text-sm">
+                                <MessageSquare className="h-4 w-4" />
+                                SMS
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {index < 3 && <Separator className="my-6" />}
                   </div>
-                  <Switch
-                    checked={notifications.suspicious}
-                    onCheckedChange={(checked) => updateNotifications("suspicious", checked)}
-                  />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>High Spending Alerts</Label>
-                    <p className="text-sm text-gray-500">
-                      Get notified when spending exceeds normal patterns
-                    </p>
-                  </div>
-                  <Switch
-                    checked={notifications.highSpending}
-                    onCheckedChange={(checked) => updateNotifications("highSpending", checked)}
-                  />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Bill Reminders</Label>
-                    <p className="text-sm text-gray-500">
-                      Get reminded about upcoming bill payments
-                    </p>
-                  </div>
-                  <Switch
-                    checked={notifications.billReminders}
-                    onCheckedChange={(checked) => updateNotifications("billReminders", checked)}
-                  />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Weekly Reports</Label>
-                    <p className="text-sm text-gray-500">
-                      Receive weekly spending and security reports
-                    </p>
-                  </div>
-                  <Switch
-                    checked={notifications.weeklyReports}
-                    onCheckedChange={(checked) => updateNotifications("weeklyReports", checked)}
-                  />
-                </div>
+                ))}
 
               </CardContent>
             </Card>

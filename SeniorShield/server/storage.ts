@@ -1,11 +1,12 @@
 import { 
-  users, accounts, transactions, alerts, familyMembers, bills, authTokens,
+  users, accounts, transactions, alerts, familyMembers, bills, situations, authTokens,
   type User, type InsertUser, 
   type Account, type InsertAccount,
   type Transaction, type InsertTransaction,
   type Alert, type InsertAlert,
   type FamilyMember, type InsertFamilyMember,
   type Bill, type InsertBill,
+  type Situation, type InsertSituation,
   type AuthToken, type InsertAuthToken
 } from "@shared/schema";
 
@@ -62,6 +63,15 @@ export interface IStorage {
   getUpcomingBills(userId: number, days?: number): Promise<Bill[]>;
   createBill(bill: InsertBill): Promise<Bill>;
 
+  // Situation operations
+  getSituationsByUserId(userId: number): Promise<Situation[]>;
+  getActiveSituationsByUserId(userId: number): Promise<Situation[]>;
+  getSituation(id: number): Promise<Situation | undefined>;
+  createSituation(situation: InsertSituation): Promise<Situation>;
+  updateSituation(id: number, updates: Partial<Situation>): Promise<Situation | undefined>;
+  deleteSituation(id: number): Promise<boolean>;
+  getSituationsNeedingReminders(): Promise<Situation[]>;
+
 
 }
 
@@ -75,6 +85,7 @@ export class MemStorage implements IStorage {
   private alerts: Map<number, Alert>;
   private familyMembers: Map<number, FamilyMember>;
   private bills: Map<number, Bill>;
+  private situations: Map<number, Situation>;
   private authTokens: Map<string, AuthToken>;
   private currentId: number;
   private dataFile: string;
@@ -87,6 +98,7 @@ export class MemStorage implements IStorage {
     this.alerts = new Map();
     this.familyMembers = new Map();
     this.bills = new Map();
+    this.situations = new Map();
     this.authTokens = new Map();
     this.currentId = 1;
 
@@ -138,13 +150,11 @@ export class MemStorage implements IStorage {
         
         console.log('Data loaded from file');
       } else {
-        // Initialize with mock data if no file exists
-        this.initializeMockData();
-        this.saveData();
+        console.log('No existing data file found, starting with empty data');
       }
     } catch (error) {
       console.error('Error loading data:', error);
-      this.initializeMockData();
+      console.log('Starting with empty data due to error');
     }
   }
 
@@ -167,281 +177,7 @@ export class MemStorage implements IStorage {
   }
 
   private initializeMockData() {
-    // Create a demo user
-    const user: User = {
-      id: this.currentId++,
-      username: "mary.johnson",
-      password: "password123",
-      fullName: "Mary Johnson",
-      email: "mary.johnson@email.com",
-      phoneNumber: "(555) 123-4567",
-      profileCompleted: true,
-      livingProfile: JSON.stringify(["I live alone in my own home", "I manage most things myself but my daughter helps with technology", "I have a medical alert system", "I'm comfortable with basic technology but avoid complex online tasks"]),
-      spendingProfile: JSON.stringify(["I mostly shop at local stores and pay with cash or debit card", "My largest expenses are groceries, utilities, and medical costs", "I prefer to pay bills in person or by phone", "Any online purchase over $100 would be unusual for me"]),
-      createdAt: new Date(),
-    };
-    this.users.set(user.id, user);
-
-    // Create demo accounts
-    const checkingAccount: Account = {
-      id: this.currentId++,
-      userId: user.id,
-      accountName: "ANZ Everyday Account",
-      accountType: "checking",
-      accountNumber: "****1234",
-      balance: "4823.45",
-      bankName: "ANZ",
-      bankPhone: "1800 019 208",
-      isActive: true,
-      createdAt: new Date(),
-    };
-    this.accounts.set(checkingAccount.id, checkingAccount);
-
-    const creditAccount: Account = {
-      id: this.currentId++,
-      userId: user.id,
-      accountName: "NAB Visa Credit Card",
-      accountType: "credit",
-      accountNumber: "****5678",
-      balance: "342.18",
-      bankName: "NAB",
-      bankPhone: "1800 033 103",
-      isActive: true,
-      createdAt: new Date(),
-    };
-    this.accounts.set(creditAccount.id, creditAccount);
-
-    // Create demo transactions
-    const transactions = [
-      {
-        id: this.currentId++,
-        accountId: creditAccount.id,
-        amount: "-299.99",
-        merchant: "Online Purchase - Tech Support",
-        category: "Technology",
-        description: "Suspicious tech support charge",
-        transactionDate: new Date(),
-        isSpending: true,
-        suspiciousScore: 95,
-        isFlagged: true,
-        reviewStatus: "pending",
-        createdAt: new Date(),
-      },
-      {
-        id: this.currentId++,
-        accountId: checkingAccount.id,
-        amount: "-67.43",
-        merchant: "Safeway Grocery",
-        category: "Groceries",
-        description: "Weekly grocery shopping",
-        transactionDate: new Date(Date.now() - 24 * 60 * 60 * 1000),
-        isSpending: true,
-        suspiciousScore: 5,
-        isFlagged: false,
-        reviewStatus: "approved",
-        createdAt: new Date(),
-      },
-      {
-        id: this.currentId++,
-        accountId: checkingAccount.id,
-        amount: "-24.99",
-        merchant: "CVS Pharmacy",
-        category: "Healthcare",
-        description: "Prescription pickup",
-        transactionDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-        isSpending: true,
-        suspiciousScore: 2,
-        isFlagged: false,
-        reviewStatus: "approved",
-        createdAt: new Date(),
-      },
-      {
-        id: this.currentId++,
-        accountId: checkingAccount.id,
-        amount: "-89.50",
-        merchant: "Shell Gas Station",
-        category: "Transportation",
-        description: "Fuel purchase",
-        transactionDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-        isSpending: true,
-        suspiciousScore: 8,
-        isFlagged: false,
-        reviewStatus: "approved",
-        createdAt: new Date(),
-      },
-      {
-        id: this.currentId++,
-        accountId: creditAccount.id,
-        amount: "-450.00",
-        merchant: "Unknown Merchant 789",
-        category: "Technology",
-        description: "Large unauthorized charge",
-        transactionDate: new Date(Date.now() - 12 * 60 * 60 * 1000),
-        isSpending: true,
-        suspiciousScore: 92,
-        isFlagged: true,
-        reviewStatus: "pending",
-        createdAt: new Date(),
-      },
-      {
-        id: this.currentId++,
-        accountId: checkingAccount.id,
-        amount: "-125.00",
-        merchant: "Pacific Electric",
-        category: "Utilities",
-        description: "Monthly electric bill",
-        transactionDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-        isSpending: true,
-        suspiciousScore: 3,
-        isFlagged: false,
-        reviewStatus: "approved",
-        createdAt: new Date(),
-      },
-      {
-        id: this.currentId++,
-        accountId: checkingAccount.id,
-        amount: "-45.00",
-        merchant: "Amazon.com",
-        category: "Shopping",
-        description: "Household supplies",
-        transactionDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-        isSpending: true,
-        suspiciousScore: 12,
-        isFlagged: false,
-        reviewStatus: "approved",
-        createdAt: new Date(),
-      },
-      {
-        id: this.currentId++,
-        accountId: creditAccount.id,
-        amount: "-78.25",
-        merchant: "Walgreens Pharmacy",
-        category: "Healthcare",
-        description: "Medication refill",
-        transactionDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-        isSpending: true,
-        suspiciousScore: 4,
-        isFlagged: false,
-        reviewStatus: "approved",
-        createdAt: new Date(),
-      },
-      {
-        id: this.currentId++,
-        accountId: checkingAccount.id,
-        amount: "-320.00",
-        merchant: "Overseas ATM - Location Unknown",
-        category: "Banking",
-        description: "ATM withdrawal in foreign country",
-        transactionDate: new Date(Date.now() - 6 * 60 * 60 * 1000),
-        isSpending: true,
-        suspiciousScore: 88,
-        isFlagged: true,
-        reviewStatus: "pending",
-        createdAt: new Date(),
-      },
-      {
-        id: this.currentId++,
-        accountId: checkingAccount.id,
-        amount: "-52.75",
-        merchant: "Target Store",
-        category: "Shopping",
-        description: "Personal care items",
-        transactionDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-        isSpending: true,
-        suspiciousScore: 7,
-        isFlagged: false,
-        reviewStatus: "approved",
-        createdAt: new Date(),
-      },
-      {
-        id: this.currentId++,
-        accountId: checkingAccount.id,
-        amount: "-95.00",
-        merchant: "Comcast Cable",
-        category: "Utilities",
-        description: "Monthly internet/cable bill",
-        transactionDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-        isSpending: true,
-        suspiciousScore: 5,
-        isFlagged: false,
-        reviewStatus: "approved",
-        createdAt: new Date(),
-      },
-      {
-        id: this.currentId++,
-        accountId: creditAccount.id,
-        amount: "-18.95",
-        merchant: "Netflix Subscription",
-        category: "Entertainment",
-        description: "Monthly streaming service",
-        transactionDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-        isSpending: true,
-        suspiciousScore: 1,
-        isFlagged: false,
-        reviewStatus: "approved",
-        createdAt: new Date(),
-      }
-    ];
-
-    transactions.forEach(t => this.transactions.set(t.id, t));
-
-    // Create demo alerts
-    const alertList = [
-      {
-        id: this.currentId++,
-        userId: user.id,
-        transactionId: transactions[0].id,
-        alertType: "suspicious_transaction",
-        severity: "high",
-        title: "High Risk Transaction",
-        description: "Unusual online purchase detected",
-        isRead: false,
-        isResolved: false,
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      },
-      {
-        id: this.currentId++,
-        userId: user.id,
-        transactionId: null,
-        alertType: "bill_reminder",
-        severity: "medium",
-        title: "Bill Reminder",
-        description: "Electric bill due in 3 days",
-        isRead: false,
-        isResolved: false,
-        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-      },
-    ];
-
-    alertList.forEach(a => this.alerts.set(a.id, a));
-
-    // Create demo family members
-    const family = [
-      {
-        id: this.currentId++,
-        userId: user.id,
-        name: "Sarah Johnson",
-        relationship: "Daughter",
-        email: "sarah.johnson@email.com",
-        phoneNumber: "(555) 987-6543",
-        receiveAlerts: true,
-        alertTypes: ["suspicious_transaction", "high_spending"],
-        createdAt: new Date(),
-      },
-      {
-        id: this.currentId++,
-        userId: user.id,
-        name: "Tom Johnson",
-        relationship: "Son",
-        email: "tom.johnson@email.com",
-        phoneNumber: "(555) 876-5432",
-        receiveAlerts: true,
-        alertTypes: ["suspicious_transaction"],
-        createdAt: new Date(),
-      },
-    ];
-
-    family.forEach(f => this.familyMembers.set(f.id, f));
+    // No demo data initialization
   }
 
   // User operations
@@ -698,6 +434,51 @@ export class MemStorage implements IStorage {
     const bill: Bill = { ...insertBill, id, createdAt: new Date() };
     this.bills.set(id, bill);
     return bill;
+  }
+
+  // Situation operations
+  async getSituationsByUserId(userId: number): Promise<Situation[]> {
+    return Array.from(this.situations.values()).filter(situation => situation.userId === userId);
+  }
+
+  async getActiveSituationsByUserId(userId: number): Promise<Situation[]> {
+    return Array.from(this.situations.values())
+      .filter(situation => situation.userId === userId && situation.isActive);
+  }
+
+  async getSituation(id: number): Promise<Situation | undefined> {
+    return this.situations.get(id);
+  }
+
+  async createSituation(insertSituation: InsertSituation): Promise<Situation> {
+    const id = this.currentId++;
+    const situation: Situation = { ...insertSituation, id, createdAt: new Date() };
+    this.situations.set(id, situation);
+    return situation;
+  }
+
+  async updateSituation(id: number, updates: Partial<Situation>): Promise<Situation | undefined> {
+    const situation = this.situations.get(id);
+    if (situation) {
+      Object.assign(situation, updates);
+      this.situations.set(id, situation);
+    }
+    return situation;
+  }
+
+  async deleteSituation(id: number): Promise<boolean> {
+    return this.situations.delete(id);
+  }
+
+  async getSituationsNeedingReminders(): Promise<Situation[]> {
+    const now = new Date();
+    return Array.from(this.situations.values())
+      .filter(situation => {
+        if (!situation.isActive) return false;
+        if (!situation.lastReminderSent) return true;
+        const daysSinceReminder = (now.getTime() - situation.lastReminderSent.getTime()) / (1000 * 60 * 60 * 24);
+        return daysSinceReminder >= situation.reminderFrequency;
+      });
   }
 
 

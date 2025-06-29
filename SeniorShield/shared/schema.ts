@@ -26,6 +26,7 @@ export const users = pgTable("users", {
   profileCompleted: boolean("profile_completed").default(false),
   livingProfile: text("living_profile"), // JSON string
   spendingProfile: text("spending_profile"), // JSON string
+  alertDelivery: text("alert_delivery"), // JSON string for delivery preferences
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -104,6 +105,22 @@ export const bills = pgTable("bills", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const situations = pgTable("situations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  situationType: text("situation_type").notNull(), // "hospital", "travel", "recovery", "family_visit", "custom"
+  description: text("description").notNull(),
+  startDate: timestamp("start_date").notNull(),
+  expectedEndDate: timestamp("expected_end_date"),
+  actualEndDate: timestamp("actual_end_date"),
+  isActive: boolean("is_active").default(true),
+  spendingExpectations: text("spending_expectations"), // JSON string with expected spending patterns
+  reminderFrequency: integer("reminder_frequency").default(7), // days between reminders
+  lastReminderSent: timestamp("last_reminder_sent"),
+  aiLearningData: text("ai_learning_data"), // JSON string with ML context
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 
 
 // Insert schemas
@@ -137,6 +154,11 @@ export const insertBillSchema = createInsertSchema(bills).omit({
   createdAt: true,
 });
 
+export const insertSituationSchema = createInsertSchema(situations).omit({
+  id: true,
+  createdAt: true,
+});
+
 
 
 // Types
@@ -157,6 +179,9 @@ export type FamilyMember = typeof familyMembers.$inferSelect;
 
 export type InsertBill = z.infer<typeof insertBillSchema>;
 export type Bill = typeof bills.$inferSelect;
+
+export type InsertSituation = z.infer<typeof insertSituationSchema>;
+export type Situation = typeof situations.$inferSelect;
 
 
 

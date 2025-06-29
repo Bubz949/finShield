@@ -26,7 +26,7 @@ export default function RecentTransactions({ transactions }: RecentTransactionsP
   const queryClient = useQueryClient();
 
   const { data: familyMembers = [] } = useQuery({
-    queryKey: ["/api/family-members/1"], // Using user ID 1 for demo
+    queryKey: ["/api/family-members"],
   });
 
   const reviewMutation = useMutation({

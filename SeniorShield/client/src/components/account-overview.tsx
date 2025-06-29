@@ -29,14 +29,6 @@ export default function AccountOverview({ accounts }: AccountOverviewProps) {
   };
 
   const getAccountStatus = (account: Account) => {
-    // For demo purposes, show credit card as having an alert
-    if (account.accountType === "credit") {
-      return {
-        icon: AlertCircle,
-        text: "1 Alert",
-        color: "text-orange-600"
-      };
-    }
     return {
       icon: CheckCircle,
       text: "Secure",

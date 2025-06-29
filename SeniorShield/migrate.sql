@@ -107,9 +107,3 @@ CREATE TABLE IF NOT EXISTS bills (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Insert demo user if not exists
-INSERT INTO users (username, email, password, full_name, phone_number, profile_completed, living_profile, spending_profile)
-SELECT 'mary.johnson', 'mary.johnson@email.com', 'password123', 'Mary Johnson', '(555) 123-4567', true,
-       '["I live alone in my own home", "I manage most things myself but my daughter helps with technology", "I have a medical alert system", "I am comfortable with basic technology but avoid complex online tasks"]',
-       '["I mostly shop at local stores and pay with cash or debit card", "My largest expenses are groceries, utilities, and medical costs", "I prefer to pay bills in person or by phone", "Any online purchase over $100 would be unusual for me"]'
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'mary.johnson');
