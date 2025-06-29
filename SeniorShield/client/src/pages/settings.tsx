@@ -37,14 +37,18 @@ export default function Settings() {
   const { toast } = useToast();
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem("token");
+        if (!token) return;
+        
         const response = await fetch("/api/dashboard", {
           headers: { Authorization: `Bearer ${token}` },
         });
         
-        if (response.ok) {
+        if (response.ok && isMounted) {
           const data = await response.json();
           setProfile(data.user);
           
@@ -55,10 +59,17 @@ export default function Settings() {
           }
         }
       } catch (error) {
-        console.error("Failed to fetch profile:", error);
+        if (isMounted) {
+          console.error("Failed to fetch profile:", error);
+        }
       }
     };
+    
     fetchProfile();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const updateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
