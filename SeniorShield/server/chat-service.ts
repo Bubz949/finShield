@@ -16,7 +16,7 @@ export class ChatService {
   private getSystemPrompt(context: ChatContext): string {
     const profileContext = this.getProfileContext(context.userProfile);
     
-    return `You are FinShield Assistant, a helpful AI assistant for a financial safety platform designed for seniors. 
+    return `You are Nuvanta Assistant, a helpful AI assistant for a financial safety platform designed for seniors. 
 
 Your role is to:
 1. Help users understand their transactions and spending patterns
@@ -40,7 +40,7 @@ User context:
 - Active alerts: ${context.alerts?.length || 0}
 ${profileContext}
 
-Remember: You're here to help seniors stay safe with their finances and use the FinShield app effectively.`;
+Remember: You're here to help seniors stay safe with their finances and use the Nuvanta app effectively.`;
   }
 
   async getChatResponse(message: string, context: ChatContext): Promise<{ response: string; profileUpdate?: any }> {
@@ -75,14 +75,14 @@ Remember: You're here to help seniors stay safe with their finances and use the 
     // Security-related queries
     if (lowerMessage.includes('security') || lowerMessage.includes('fraud') || lowerMessage.includes('scam')) {
       return {
-        response: "FinShield helps protect you from fraud by monitoring your transactions for unusual patterns. Always verify unexpected charges, never share your banking details, and contact your bank immediately if you suspect fraud. You can also flag suspicious transactions in the app for review."
+        response: "Nuvanta helps protect you from fraud by monitoring your transactions for unusual patterns. Always verify unexpected charges, never share your banking details, and contact your bank immediately if you suspect fraud. You can also flag suspicious transactions in the app for review."
       };
     }
     
     // App navigation help
     if (lowerMessage.includes('how to') || lowerMessage.includes('navigate') || lowerMessage.includes('use')) {
       return {
-        response: "I'm here to help you use FinShield! The main sections are: Dashboard (overview of your finances), Transactions (detailed transaction history), and Settings (manage your preferences). What specific feature would you like help with?"
+        response: "I'm here to help you use Nuvanta! The main sections are: Dashboard (overview of your finances), Transactions (detailed transaction history), and Settings (manage your preferences). What specific feature would you like help with?"
       };
     }
     
@@ -96,13 +96,13 @@ Remember: You're here to help seniors stay safe with their finances and use the 
     // General greeting or unclear query
     if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('help')) {
       return {
-        response: "Hello! I'm here to help you with FinShield. I can assist with understanding your transactions, explaining app features, answering questions about account security, or helping you manage life situations that affect your spending. What would you like to know?"
+        response: "Hello! I'm here to help you with Nuvanta. I can assist with understanding your transactions, explaining app features, answering questions about account security, or helping you manage life situations that affect your spending. What would you like to know?"
       };
     }
     
     // Default response
     return {
-      response: "I'm here to help with your FinShield app and financial safety questions. You can ask me about transactions, alerts, app features, security tips, or tell me about life situations like hospital stays or travel that might affect your spending patterns. What specific question do you have?"
+      response: "I'm here to help with your Nuvanta app and financial safety questions. You can ask me about transactions, alerts, app features, security tips, or tell me about life situations like hospital stays or travel that might affect your spending patterns. What specific question do you have?"
     };
   }
 

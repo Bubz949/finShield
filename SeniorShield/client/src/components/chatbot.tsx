@@ -17,7 +17,7 @@ export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      content: "Hi! I'm your FinShield assistant. I can help you with questions about your transactions, account security, and using the app. How can I help you today?",
+      content: "Hi! I'm your Nuvanta assistant. I can help you with questions about your transactions, account security, and using the app. How can I help you today?",
       isUser: false,
       timestamp: new Date(),
     },
@@ -106,7 +106,7 @@ export default function Chatbot() {
       {isOpen && (
         <Card className="fixed bottom-24 right-6 w-96 h-[500px] shadow-xl z-50 flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 flex-shrink-0">
-            <CardTitle className="text-lg">FinShield Assistant</CardTitle>
+            <CardTitle className="text-lg">Nuvanta Assistant</CardTitle>
             <Button
               variant="ghost"
               size="icon"

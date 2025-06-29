@@ -2,7 +2,7 @@
 
 ## Overview
 
-The enhanced FinShield AI chatbot can now intelligently update user profiles when they mention life situation changes. This system leverages the existing user questionnaire data to provide contextual fraud detection adjustments.
+The enhanced Nuvanta AI chatbot can now intelligently update user profiles when they mention life situation changes. This system leverages the existing user questionnaire data to provide contextual fraud detection adjustments.
 
 ## Key Features
 
@@ -163,4 +163,4 @@ curl -X PATCH /api/profile/reset-situation \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-This profile update system enhances FinShield's existing questionnaire-based approach, allowing natural conversation to keep user profiles current and fraud detection contextually accurate.
+This profile update system enhances Nuvanta's existing questionnaire-based approach, allowing natural conversation to keep user profiles current and fraud detection contextually accurate.

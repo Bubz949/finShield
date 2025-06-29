@@ -1,4 +1,4 @@
-# Database Setup Fix for FinShield
+# Database Setup Fix for Nuvanta
 
 ## Problem
 Your PostgreSQL database is missing the required tables/columns, causing login errors with code `42703` (undefined_column).

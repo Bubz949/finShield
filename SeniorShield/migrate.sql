@@ -1,4 +1,4 @@
--- Create tables for FinShield application
+-- Create tables for Nuvanta application
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (

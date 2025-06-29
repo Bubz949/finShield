@@ -1,4 +1,4 @@
-# Financial Safety Platform
+# Nuvanta
 
 A guardian angel platform for seniors' financial safety, helping protect elderly individuals from financial fraud and managing their finances securely.
 

@@ -1,7 +1,7 @@
-# FinShield AI Chatbot Implementation
+# Nuvanta AI Chatbot Implementation
 
 ## Overview
-I've successfully implemented a Gen AI chatbot for your FinShield application that helps users with:
+I've successfully implemented a Gen AI chatbot for your Nuvanta application that helps users with:
 - General app navigation and features
 - Transaction-related questions
 - Security and fraud prevention guidance
@@ -73,7 +73,7 @@ The chatbot can help with:
 **Bot**: "If you see an unfamiliar transaction, you can flag it for review in the Transactions section. Look for the transaction, click 'Details', then use the review options. If you suspect fraud, contact your bank immediately and consider blocking the transaction."
 
 **User**: "How do I use this app?"
-**Bot**: "FinShield helps protect your finances! The main sections are: Dashboard (overview of your finances), Transactions (detailed transaction history), and Settings (manage your preferences). What specific feature would you like help with?"
+**Bot**: "Nuvanta helps protect your finances! The main sections are: Dashboard (overview of your finances), Transactions (detailed transaction history), and Settings (manage your preferences). What specific feature would you like help with?"
 
 ## Future Enhancements
 
