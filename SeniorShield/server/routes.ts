@@ -10,7 +10,7 @@ import csrf from "csurf";
 import sanitize from "sanitize-html";
 import { auditLog } from "./audit-logger";
 import { mlService } from "./ml/service";
-import { chatService } from "./chat-service";
+import { aiChatService } from "./ai-chat-service";
 
 // Helper functions for risk trends
 function calculateDailyRiskTrends(transactions: any[]) {
@@ -447,7 +447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/transactions/:transactionId/review", requireAuth, async (req, res) => {
     try {
       const transactionId = parseInt(req.params.transactionId);
-      const { reviewStatus, isFraudulent } = req.body;
+      const { userFeedback } = req.body; // "accurate", "inaccurate", "unsure"
       
       // Get transaction to check ownership
       const transaction = await storage.getTransaction(transactionId);
@@ -457,22 +457,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Forbidden" });
       }
       
-      if (!["pending", "approved", "blocked"].includes(reviewStatus)) {
-        return res.status(400).json({ message: "Invalid review status" });
+      if (!["accurate", "inaccurate", "unsure"].includes(userFeedback)) {
+        return res.status(400).json({ message: "Invalid feedback. Must be 'accurate', 'inaccurate', or 'unsure'" });
       }
 
       // Get historical transactions for this user for model updates
       const historicalTransactions = await storage.getTransactionsByUserId(req.user!.id);
       
       // Update ML models with user feedback
-      if (typeof isFraudulent === 'boolean') {
-        await mlService.updateModels(transaction, req.user!.id, isFraudulent, historicalTransactions);
+      await mlService.updateModelsWithFeedback(transaction, req.user!.id, userFeedback, historicalTransactions);
+      
+      // Determine new status based on feedback
+      let reviewStatus = "pending";
+      let isFlagged = transaction.isFlagged;
+      
+      if (userFeedback === "accurate") {
+        reviewStatus = "confirmed_fraud";
+        isFlagged = true;
+      } else if (userFeedback === "inaccurate") {
+        reviewStatus = "approved";
+        isFlagged = false;
+      } else {
+        reviewStatus = "needs_review";
       }
       
       // Update transaction status
       const updatedTransaction = await storage.updateTransaction(transactionId, { 
         reviewStatus,
-        isFlagged: isFraudulent || false
+        isFlagged,
+        userFeedback
       });
       
       if (!updatedTransaction) {
@@ -786,7 +799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userProfile: user
       };
       
-      const result = await chatService.getChatResponse(message, context);
+      const result = await aiChatService.getChatResponse(message, context);
       
       // Handle profile updates
       if (result.profileUpdate) {

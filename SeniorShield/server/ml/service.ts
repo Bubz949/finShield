@@ -125,6 +125,32 @@ class MLService {
     };
   }
 
+  // Update models with user feedback (accurate/inaccurate/unsure)
+  async updateModelsWithFeedback(transaction: Transaction, userId: number, feedback: string, historicalTransactions: Transaction[]) {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+
+    if (feedback === "accurate") {
+      // User confirms the flag was correct - reinforce the model
+      await this.fraudDetectionService.updateModels(transaction, userId, true, historicalTransactions);
+    } else if (feedback === "inaccurate") {
+      // User says flag was wrong - correct the model
+      await this.fraudDetectionService.updateModels(transaction, userId, false, historicalTransactions);
+    } else if (feedback === "unsure") {
+      // User is uncertain - use as weak signal, don't strongly update either direction
+      // This helps the model learn about edge cases without strong bias
+    }
+  }
+
+  // Legacy method for backward compatibility
+  async updateModels(transaction: Transaction, userId: number, isActuallyFraud: boolean, historicalTransactions: Transaction[]) {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+    await this.fraudDetectionService.updateModels(transaction, userId, isActuallyFraud, historicalTransactions);
+  }
+
   // Analyze a batch of transactions (useful for background processing)
   async analyzeTransactions(transactions: Transaction[]): Promise<Map<number, any>> {
     if (!this.isInitialized) {

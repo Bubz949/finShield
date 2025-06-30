@@ -34,9 +34,9 @@ export default function TransactionReviewDialog({
 
   const reviewMutation = useMutation({
     mutationFn: async ({ action, data }: { action: string; data: any }) => {
-      if (action === "approve" || action === "ignore") {
+      if (action === "accurate" || action === "inaccurate" || action === "unsure") {
         return apiRequest("PATCH", `/api/transactions/${transaction?.id}/review`, { 
-          reviewStatus: action === "approve" ? "approved" : "ignored",
+          userFeedback: action,
           notes 
         });
       } else if (action === "escalate_family") {
@@ -70,15 +70,20 @@ export default function TransactionReviewDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/transactions/1"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/1"] });
       
-      if (variables.action === "approve") {
+      if (variables.action === "accurate") {
         toast({
-          title: "Transaction Approved",
-          description: "This transaction has been marked as safe and approved.",
+          title: "Feedback Recorded",
+          description: "Thank you. This helps improve our fraud detection accuracy.",
         });
-      } else if (variables.action === "ignore") {
+      } else if (variables.action === "inaccurate") {
         toast({
-          title: "Transaction Ignored",
-          description: "This transaction will no longer appear as flagged.",
+          title: "Feedback Recorded",
+          description: "Thank you. We'll improve our detection to avoid similar false flags.",
+        });
+      } else if (variables.action === "unsure") {
+        toast({
+          title: "Feedback Recorded",
+          description: "Thank you. We'll use this to better understand edge cases.",
         });
       } else if (variables.action === "escalate_family") {
         toast({
@@ -182,37 +187,55 @@ export default function TransactionReviewDialog({
             <h3 className="text-xl font-semibold">How would you like to handle this transaction?</h3>
             
             <div className="grid gap-4">
-              {/* Approve Transaction */}
+              {/* Flag is Accurate */}
               <Card 
                 className={`cursor-pointer border-2 transition-colors ${
-                  selectedAction === "approve" ? "border-green-600 bg-green-50" : "border-gray-200 hover:border-green-300"
+                  selectedAction === "accurate" ? "border-red-600 bg-red-50" : "border-gray-200 hover:border-red-300"
                 }`}
-                onClick={() => setSelectedAction("approve")}
+                onClick={() => setSelectedAction("accurate")}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center space-x-3">
-                    <CheckCircle className="h-6 w-6 text-green-600" />
+                    <AlertTriangle className="h-6 w-6 text-red-600" />
                     <div>
-                      <p className="text-lg font-semibold">Approve Transaction</p>
-                      <p className="text-lg text-gray-600">This is a legitimate transaction I recognize</p>
+                      <p className="text-lg font-semibold">Yes, this flag is accurate</p>
+                      <p className="text-lg text-gray-600">This transaction is suspicious and should be flagged</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Ignore Transaction */}
+              {/* Flag is Inaccurate */}
               <Card 
                 className={`cursor-pointer border-2 transition-colors ${
-                  selectedAction === "ignore" ? "border-blue-600 bg-blue-50" : "border-gray-200 hover:border-blue-300"
+                  selectedAction === "inaccurate" ? "border-green-600 bg-green-50" : "border-gray-200 hover:border-green-300"
                 }`}
-                onClick={() => setSelectedAction("ignore")}
+                onClick={() => setSelectedAction("inaccurate")}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                    <div>
+                      <p className="text-lg font-semibold">No, this flag is inaccurate</p>
+                      <p className="text-lg text-gray-600">This is a normal transaction that shouldn't be flagged</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Not Sure */}
+              <Card 
+                className={`cursor-pointer border-2 transition-colors ${
+                  selectedAction === "unsure" ? "border-blue-600 bg-blue-50" : "border-gray-200 hover:border-blue-300"
+                }`}
+                onClick={() => setSelectedAction("unsure")}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center space-x-3">
                     <X className="h-6 w-6 text-blue-600" />
                     <div>
-                      <p className="text-lg font-semibold">Ignore This Alert</p>
-                      <p className="text-lg text-gray-600">Stop showing alerts for this transaction</p>
+                      <p className="text-lg font-semibold">I'm not sure</p>
+                      <p className="text-lg text-gray-600">I need more information or help to decide</p>
                     </div>
                   </div>
                 </CardContent>
